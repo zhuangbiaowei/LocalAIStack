@@ -17,6 +17,15 @@ func WriteBaseInfo(outputPath, format string, force, appendMode bool) error {
 	if err != nil {
 		return err
 	}
+	if !force && !appendMode {
+		defaultPath, err := resolveOutputPath("")
+		if err != nil {
+			return err
+		}
+		if resolvedPath == defaultPath {
+			force = true
+		}
+	}
 	if err := ensureWritable(resolvedPath, force, appendMode); err != nil {
 		return err
 	}

@@ -42,6 +42,7 @@ func init() {
 	commands.RegisterServiceCommands(rootCmd)
 	commands.RegisterModelCommands(rootCmd)
 	commands.RegisterSystemCommands(rootCmd)
+	commands.RegisterInitCommand(rootCmd)
 }
 
 func initConfig() {
