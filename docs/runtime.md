@@ -27,9 +27,20 @@ Native execution is reserved for performance-critical paths.
 
 ---
 
-## 3. Execution Modes
+## 3. Runtime Components
 
-### 3.1 Container-Based Execution (Default)
+LocalAIStack implements a runtime manager with two execution backends:
+
+* **Container runtime**: Docker or Podman CLI integration.
+* **Native runtime**: Direct process execution on the host.
+
+The manager tracks process state, captures logs, and publishes health status for every running module.
+
+---
+
+## 4. Execution Modes
+
+### 4.1 Container-Based Execution (Default)
 
 Used for:
 
@@ -46,7 +57,7 @@ Used for:
 
 ---
 
-### 3.2 Native Execution
+### 4.2 Native Execution
 
 Used for:
 
@@ -61,18 +72,20 @@ Used for:
 
 ---
 
-## 4. Mode Selection Strategy
+## 5. Mode Selection Strategy
 
 Execution mode is determined by:
 
-1. Module manifest declaration
-2. Hardware capability
-3. Policy constraints
-4. User preference (optional)
+1. Module manifest declaration (`runtime.modes` + optional `runtime.preferred`)
+2. Policy constraints (allowed runtimes)
+3. Local runtime configuration (`runtime.default_mode`, `runtime.docker_enabled`, `runtime.native_enabled`)
+4. User preference (optional override)
+
+If the preferred mode is unavailable, the runtime manager falls back to the default mode or the first available mode.
 
 ---
 
-## 5. Runtime Responsibilities
+## 6. Runtime Responsibilities
 
 * Process lifecycle
 * Resource allocation
@@ -81,7 +94,33 @@ Execution mode is determined by:
 
 ---
 
-## 6. Runtime Non-Responsibilities
+## 7. Process Lifecycle & Log Collection
+
+The runtime manager supports:
+
+* **Start/Stop**: launch and terminate module processes or containers.
+* **Monitoring**: track running state and exit status.
+* **Log capture**: stream stdout/stderr to per-module log files under `runtime.log_dir`.
+
+Container logs are collected via `docker logs`/`podman logs`.
+Native processes stream logs directly from stdout/stderr.
+
+---
+
+## 8. Health Reporting
+
+Health status is reported as:
+
+* **healthy**: process/container is running and optional checks succeed.
+* **unhealthy**: process/container has exited or health checks fail.
+* **unknown**: no health signal yet.
+
+For containers with health checks configured in the image, the runtime manager reads the container health status.
+For native processes, the manager reports healthy while the process is running or executes an optional health command.
+
+---
+
+## 9. Runtime Non-Responsibilities
 
 * No dependency resolution
 * No policy evaluation
@@ -89,7 +128,7 @@ Execution mode is determined by:
 
 ---
 
-## 7. Resource Management
+## 10. Resource Management
 
 * GPU access is explicit
 * Memory limits are enforced where possible
@@ -97,7 +136,7 @@ Execution mode is determined by:
 
 ---
 
-## 8. Failure Handling
+## 11. Failure Handling
 
 Runtime failures result in:
 
@@ -107,7 +146,7 @@ Runtime failures result in:
 
 ---
 
-## 9. Security Boundaries
+## 12. Security Boundaries
 
 * Containers run with minimal privileges
 * Native execution is limited to trusted modules
@@ -115,7 +154,7 @@ Runtime failures result in:
 
 ---
 
-## 10. Future Evolution
+## 13. Future Evolution
 
 Potential extensions:
 
@@ -125,7 +164,7 @@ Potential extensions:
 
 ---
 
-## 11. Summary
+## 14. Summary
 
 The runtime model balances:
 

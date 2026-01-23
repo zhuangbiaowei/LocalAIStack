@@ -240,8 +240,10 @@ make test
 
 ### Planned Packages
 
-- `internal/runtime/docker.go` - Docker runtime integration
+- `internal/runtime/manager.go` - Runtime lifecycle orchestration
+- `internal/runtime/container.go` - Docker/Podman runtime integration
 - `internal/runtime/native.go` - Native process execution
+- `internal/runtime/selector.go` - Execution mode selection strategy
 - `internal/model/registry.go` - Model registry and management
 - `internal/control/policy.go` - Policy evaluation engine
 - `internal/control/state.go` - State persistence and reconciliation

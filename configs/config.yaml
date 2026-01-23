@@ -25,3 +25,4 @@ runtime:
   docker_enabled: true
   native_enabled: true
   default_mode: container
+  log_dir: /var/lib/localaistack/runtime
