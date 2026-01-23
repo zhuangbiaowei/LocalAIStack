@@ -56,6 +56,7 @@ type RuntimeConfig struct {
 	DockerEnabled bool   `mapstructure:"docker_enabled"`
 	NativeEnabled bool   `mapstructure:"native_enabled"`
 	DefaultMode   string `mapstructure:"default_mode"`
+	LogDir        string `mapstructure:"log_dir"`
 }
 
 type LoadOptions struct {
@@ -92,6 +93,7 @@ func DefaultConfig() *Config {
 			DockerEnabled: true,
 			NativeEnabled: true,
 			DefaultMode:   "container",
+			LogDir:        "/var/lib/localaistack/runtime",
 		},
 	}
 }
@@ -179,4 +181,5 @@ func applyDefaults(v *viper.Viper, defaults *Config) {
 	v.SetDefault("runtime.docker_enabled", defaults.Runtime.DockerEnabled)
 	v.SetDefault("runtime.native_enabled", defaults.Runtime.NativeEnabled)
 	v.SetDefault("runtime.default_mode", defaults.Runtime.DefaultMode)
+	v.SetDefault("runtime.log_dir", defaults.Runtime.LogDir)
 }
