@@ -1,7 +1,7 @@
 # Makefile for LocalAIStack
 
 # Variables
-BINARY_NAME=localaistack
+BINARY_NAME=las
 SERVER_BINARY=$(BINARY_NAME)-server
 CLI_BINARY=$(BINARY_NAME)
 BUILD_DIR=build
@@ -155,8 +155,8 @@ dev:
 # Docker targets (optional)
 .PHONY: docker-build
 docker-build:
-	docker build -t localaistack:$(VERSION) .
+	docker build -t $(BINARY_NAME):$(VERSION) .
 
 .PHONY: docker-push
 docker-push: docker-build
-	docker push localaistack:$(VERSION)
+	docker push $(BINARY_NAME):$(VERSION)
