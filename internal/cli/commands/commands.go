@@ -132,6 +132,35 @@ func RegisterSystemCommands(rootCmd *cobra.Command) {
 		Short: "System management",
 	}
 
+	initCmd := newInitCommand()
+
+	detectCmd := &cobra.Command{
+		Use:   "detect",
+		Short: "Detect hardware capabilities",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println("Detecting hardware...")
+		},
+	}
+
+	infoCmd := &cobra.Command{
+		Use:   "info",
+		Short: "Show system information",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println("System information:")
+		},
+	}
+
+	systemCmd.AddCommand(initCmd)
+	systemCmd.AddCommand(detectCmd)
+	systemCmd.AddCommand(infoCmd)
+	rootCmd.AddCommand(systemCmd)
+}
+
+func RegisterInitCommand(rootCmd *cobra.Command) {
+	rootCmd.AddCommand(newInitCommand())
+}
+
+func newInitCommand() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Collect base system info and write to ~/.localaistack/base_info.md",
@@ -168,25 +197,5 @@ func RegisterSystemCommands(rootCmd *cobra.Command) {
 	initCmd.Flags().Bool("force", false, "overwrite existing file")
 	initCmd.Flags().Bool("append", false, "append to existing file")
 	initCmd.Flags().String("format", "md", "output format: md or json")
-
-	detectCmd := &cobra.Command{
-		Use:   "detect",
-		Short: "Detect hardware capabilities",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println("Detecting hardware...")
-		},
-	}
-
-	infoCmd := &cobra.Command{
-		Use:   "info",
-		Short: "Show system information",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println("System information:")
-		},
-	}
-
-	systemCmd.AddCommand(initCmd)
-	systemCmd.AddCommand(detectCmd)
-	systemCmd.AddCommand(infoCmd)
-	rootCmd.AddCommand(systemCmd)
+	return initCmd
 }
