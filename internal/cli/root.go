@@ -1,0 +1,67 @@
+package cli
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/zhuangbiaowei/LocalAIStack/internal/cli/commands"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "localaistack",
+	Short: "LocalAIStack - Local AI workstation management",
+	Long: `LocalAIStack is an open, modular software stack for building and
+operating local AI workstations. It provides unified control over AI development
+environments, inference runtimes, models, and applications.`,
+}
+
+func Execute() error {
+	return rootCmd.Execute()
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().String("config", "", "config file (default is $HOME/.localaistack/config.yaml)")
+	rootCmd.PersistentFlags().Bool("verbose", false, "verbose output")
+
+	if err := viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding config flag: %v\n", err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding verbose flag: %v\n", err)
+		os.Exit(1)
+	}
+
+	commands.RegisterModuleCommands(rootCmd)
+	commands.RegisterServiceCommands(rootCmd)
+	commands.RegisterModelCommands(rootCmd)
+	commands.RegisterSystemCommands(rootCmd)
+}
+
+func initConfig() {
+	if cfgFile := viper.GetString("config"); cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
+			os.Exit(1)
+		}
+		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".localaistack")
+	}
+
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		if viper.GetString("config") != "" {
+			fmt.Fprintf(os.Stderr, "Error reading config file: %v\n", err)
+		}
+	}
+}

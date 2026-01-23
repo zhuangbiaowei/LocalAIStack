@@ -1,0 +1,47 @@
+policies:
+  - name: tier1-entry
+    description: "Tier 1 - Entry level (<=14B inference)"
+    conditions:
+      gpu_vram_max: "16GB"
+      ram_max: "32GB"
+    allow:
+      max_model_size: "14B"
+      runtimes:
+        - ollama
+        - llama.cpp
+    deny:
+      - multi_gpu_training
+      - vllm
+      - sglang
+
+  - name: tier2-midrange
+    description: "Tier 2 - Mid-range (≈30B inference)"
+    conditions:
+      gpu_vram_min: "32GB"
+      ram_min: "64GB"
+    allow:
+      max_model_size: "30B"
+      runtimes:
+        - ollama
+        - llama.cpp
+        - vllm
+    deny:
+      - multi_gpu_training
+      - sglang
+
+  - name: tier3-highend
+    description: "Tier 3 - High-end (≥70B, multi-GPU, NVLink)"
+    conditions:
+      gpu_vram_min: "80GB"
+      gpu_count_min: 2
+      nvlink: true
+    allow:
+      max_model_size: "unlimited"
+      runtimes:
+        - ollama
+        - llama.cpp
+        - vllm
+        - sglang
+      features:
+        - multi_gpu_training
+        - tensor_parallel

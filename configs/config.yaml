@@ -1,0 +1,27 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  read_timeout: 30
+  write_timeout: 30
+  enable_tls: false
+  tls_cert_file: ""
+  tls_key_file: ""
+
+logging:
+  level: info
+  format: json
+  output: stdout
+
+control:
+  data_dir: /var/lib/localaistack
+  policy_file: /etc/localaistack/policies.yaml
+
+storage:
+  model_dir: /var/lib/localaistack/models
+  cache_dir: /var/lib/localaistack/cache
+  download_dir: /var/lib/localaistack/downloads
+
+runtime:
+  docker_enabled: true
+  native_enabled: true
+  default_mode: container
