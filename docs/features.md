@@ -263,7 +263,7 @@ Advanced features that build on core functionality.
 |----------|---------|-------------|--------------|
 | **P2** | Offline Mode | Full offline operation support (no external dependencies) | All Core Phases |
 | **P2** | Multi-Node Support | Optional multi-node cluster management | Control Layer |
-| **P2** | Backup & Restore | System state backup and restore functionality | State Manager |
+| **P2** | Advanced Backup/Restore | Incremental backups, cross-host restore, encryption and verification | Basic Backup/Restore |
 | **P2** | Export/Import Configuration | Configuration sharing between systems | Config Management |
 | **P2** | Auto-Update | Automated update mechanism with safety checks | Upgrade Mechanism |
 | **P2** | Telemetry & Analytics | Anonymous usage and performance telemetry | Logging & Monitoring |
@@ -316,7 +316,9 @@ Add comprehensive module support:
 1. **Phase 6**: Core AI Frameworks (PyTorch, HF, LangChain) (2 weeks)
 2. **Phase 7**: Core Data Services (PostgreSQL, Redis) (2 weeks)
 3. **Phase 9**: Model Management (HF integration) (2 weeks)
-4. **Phase 11**: Basic Web UI (2-4 weeks)
+4. **Basic Backup/Restore**: Config + state export, model directory snapshots (1 week)
+   - **Dependencies**: State Manager, Model Storage Layout.
+5. **Phase 11**: Basic Web UI (2-4 weeks)
 
 **Outcome**: Full-featured local AI development environment with web UI.
 
