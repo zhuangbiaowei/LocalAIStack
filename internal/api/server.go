@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/config"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/control"
+	"github.com/zhuangbiaowei/LocalAIStack/internal/llm"
 )
 
 type Server struct {
@@ -22,7 +24,7 @@ func NewServer(cfg *config.Config, controlLayer *control.ControlLayer) *Server {
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/api/v1/status", statusHandler)
 
-	return &Server{
+	server := &Server{
 		cfg:          cfg,
 		controlLayer: controlLayer,
 		server: &http.Server{
@@ -32,6 +34,10 @@ func NewServer(cfg *config.Config, controlLayer *control.ControlLayer) *Server {
 			WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 		},
 	}
+
+	mux.HandleFunc("/api/v1/providers", server.providersHandler)
+
+	return server
 }
 
 func (s *Server) Start() error {
@@ -58,4 +64,32 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"status":"running","version":"%s"}`, config.Version)))
+}
+
+type providersResponse struct {
+	Default   string   `json:"default"`
+	Providers []string `json:"providers"`
+}
+
+func (s *Server) providersHandler(w http.ResponseWriter, r *http.Request) {
+	registry, err := llm.NewRegistryFromConfig(s.cfg.LLM)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to load providers: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := providersResponse{
+		Default:   s.cfg.LLM.Provider,
+		Providers: registry.Providers(),
+	}
+
+	payload, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to encode response: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(payload)
 }

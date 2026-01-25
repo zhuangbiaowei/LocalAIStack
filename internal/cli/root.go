@@ -41,6 +41,7 @@ func init() {
 	commands.RegisterModuleCommands(rootCmd)
 	commands.RegisterServiceCommands(rootCmd)
 	commands.RegisterModelCommands(rootCmd)
+	commands.RegisterProviderCommands(rootCmd)
 	commands.RegisterSystemCommands(rootCmd)
 	commands.RegisterInitCommand(rootCmd)
 }

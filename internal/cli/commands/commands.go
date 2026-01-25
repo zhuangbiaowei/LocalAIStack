@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/spf13/cobra"
+	"github.com/zhuangbiaowei/LocalAIStack/internal/llm"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/system"
 )
 
@@ -154,6 +155,27 @@ func RegisterSystemCommands(rootCmd *cobra.Command) {
 	systemCmd.AddCommand(detectCmd)
 	systemCmd.AddCommand(infoCmd)
 	rootCmd.AddCommand(systemCmd)
+}
+
+func RegisterProviderCommands(rootCmd *cobra.Command) {
+	providerCmd := &cobra.Command{
+		Use:   "provider",
+		Short: "Manage LLM providers",
+	}
+
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List available LLM providers",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println("Available LLM providers:")
+			for _, provider := range llm.BuiltInProviders() {
+				cmd.Printf("- %s\n", provider)
+			}
+		},
+	}
+
+	providerCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(providerCmd)
 }
 
 func RegisterInitCommand(rootCmd *cobra.Command) {
