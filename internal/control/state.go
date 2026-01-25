@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
+	"fmt"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/i18n"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/module"
 )

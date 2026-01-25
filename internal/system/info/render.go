@@ -1,7 +1,6 @@
 package info
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/zhuangbiaowei/LocalAIStack/internal/i18n"
