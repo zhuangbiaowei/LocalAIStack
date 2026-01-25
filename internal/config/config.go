@@ -2,11 +2,13 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -197,6 +199,15 @@ func LoadConfigWithOptions(opts LoadOptions) (*Config, error) {
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(cfg.I18n.Language) == "" {
+		if legacyLanguage := strings.TrimSpace(v.GetString("language")); legacyLanguage != "" {
+			cfg.I18n.Language = legacyLanguage
+		}
+	} else if legacyLanguage := strings.TrimSpace(v.GetString("language")); legacyLanguage != "" {
+		if !hasExplicitI18nLanguage(v, envPrefix) {
+			cfg.I18n.Language = legacyLanguage
+		}
+	}
 
 	return cfg, nil
 }
@@ -236,4 +247,43 @@ func applyDefaults(v *viper.Viper, defaults *Config) {
 	v.SetDefault("i18n.translation.api_key", defaults.I18n.Translation.APIKey)
 	v.SetDefault("i18n.translation.base_url", defaults.I18n.Translation.BaseURL)
 	v.SetDefault("i18n.translation.timeout_seconds", defaults.I18n.Translation.TimeoutSeconds)
+}
+
+func hasExplicitI18nLanguage(v *viper.Viper, envPrefix string) bool {
+	if envPrefix == "" {
+		envPrefix = EnvPrefix
+	}
+	envKey := fmt.Sprintf("%s_I18N_LANGUAGE", strings.ToUpper(envPrefix))
+	if envValue, ok := os.LookupEnv(envKey); ok && strings.TrimSpace(envValue) != "" {
+		return true
+	}
+
+	configFile := v.ConfigFileUsed()
+	if configFile == "" {
+		return false
+	}
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		return false
+	}
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return false
+	}
+	i18nRaw, ok := raw["i18n"]
+	if !ok {
+		return false
+	}
+	i18nMap, ok := i18nRaw.(map[string]any)
+	if !ok {
+		return false
+	}
+	langRaw, ok := i18nMap["language"]
+	if !ok {
+		return false
+	}
+	if lang, ok := langRaw.(string); ok {
+		return strings.TrimSpace(lang) != ""
+	}
+	return strings.TrimSpace(fmt.Sprintf("%v", langRaw)) != ""
 }
