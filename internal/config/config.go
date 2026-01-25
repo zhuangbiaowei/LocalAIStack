@@ -23,6 +23,7 @@ type Config struct {
 	Control ControlConfig `mapstructure:"control"`
 	Storage StorageConfig `mapstructure:"storage"`
 	Runtime RuntimeConfig `mapstructure:"runtime"`
+	LLM     LLMConfig     `mapstructure:"llm"`
 }
 
 type ServerConfig struct {
@@ -57,6 +58,12 @@ type RuntimeConfig struct {
 	NativeEnabled bool   `mapstructure:"native_enabled"`
 	DefaultMode   string `mapstructure:"default_mode"`
 	LogDir        string `mapstructure:"log_dir"`
+}
+
+type LLMConfig struct {
+	Provider       string `mapstructure:"provider"`
+	Model          string `mapstructure:"model"`
+	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
 }
 
 type LoadOptions struct {
@@ -94,6 +101,11 @@ func DefaultConfig() *Config {
 			NativeEnabled: true,
 			DefaultMode:   "container",
 			LogDir:        "/var/lib/localaistack/runtime",
+		},
+		LLM: LLMConfig{
+			Provider:       "eino",
+			Model:          "",
+			TimeoutSeconds: 30,
 		},
 	}
 }
@@ -182,4 +194,8 @@ func applyDefaults(v *viper.Viper, defaults *Config) {
 	v.SetDefault("runtime.native_enabled", defaults.Runtime.NativeEnabled)
 	v.SetDefault("runtime.default_mode", defaults.Runtime.DefaultMode)
 	v.SetDefault("runtime.log_dir", defaults.Runtime.LogDir)
+
+	v.SetDefault("llm.provider", defaults.LLM.Provider)
+	v.SetDefault("llm.model", defaults.LLM.Model)
+	v.SetDefault("llm.timeout_seconds", defaults.LLM.TimeoutSeconds)
 }

@@ -26,3 +26,8 @@ runtime:
   native_enabled: true
   default_mode: container
   log_dir: /var/lib/localaistack/runtime
+
+llm:
+  provider: eino
+  model: ""
+  timeout_seconds: 30
