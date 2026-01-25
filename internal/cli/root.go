@@ -17,6 +17,9 @@ var rootCmd = &cobra.Command{
 	Use:   "localaistack",
 	Short: "LocalAIStack - Local AI workstation management",
 	Long:  "LocalAIStack is an open, modular software stack for building and operating local AI workstations. It provides unified control over AI development environments, inference runtimes, models, and applications.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
 
 func Execute() error {
