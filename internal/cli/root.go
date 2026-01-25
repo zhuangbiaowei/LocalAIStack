@@ -69,7 +69,13 @@ func initConfig() {
 		}
 	}
 
-	cfg, err := config.LoadConfig()
+	configFile := viper.ConfigFileUsed()
+	if configFile == "" {
+		configFile = viper.GetString("config")
+	}
+	cfg, err := config.LoadConfigWithOptions(config.LoadOptions{
+		ConfigFile: configFile,
+	})
 	if err == nil {
 		_ = i18n.Init(cfg.I18n)
 	}
