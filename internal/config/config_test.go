@@ -61,3 +61,22 @@ logging:
 		t.Fatalf("expected logging format console, got %s", cfg.Logging.Format)
 	}
 }
+
+func TestLoadConfigLegacyLanguage(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.yaml")
+	configData := []byte(`language: zh
+`)
+	if err := os.WriteFile(configPath, configData, 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	cfg, err := LoadConfigWithOptions(LoadOptions{ConfigFile: configPath, RequireConfigFile: true})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if cfg.I18n.Language != "zh" {
+		t.Fatalf("expected legacy language zh, got %s", cfg.I18n.Language)
+	}
+}
