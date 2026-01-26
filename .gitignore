@@ -41,7 +41,8 @@ bin/
 *.yaml
 !configs/*.yaml
 !configs/examples/*.yaml
-!locales/*.yaml
+locales/*.yaml
+!locales/zh-cn.yaml
 !docs/modules.schema.yaml
 
 # Log files
