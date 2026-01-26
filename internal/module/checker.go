@@ -33,7 +33,8 @@ func resolveModuleDir(name string) (string, error) {
 }
 
 func runModuleCheck(name, moduleDir string) error {
-	verifyScript := filepath.Join(moduleDir, "verify.sh")
+	script_path := filepath.Join(moduleDir, "scripts")
+	verifyScript := filepath.Join(script_path, "verify.sh")
 	if _, err := os.Stat(verifyScript); err != nil {
 		if os.IsNotExist(err) {
 			return i18n.Errorf("module %q does not provide a check script", name)
