@@ -30,7 +30,11 @@ func resolveModuleDir(name string) (string, error) {
 		moduleDir := filepath.Join(root, "modules", name)
 		manifestPath := filepath.Join(moduleDir, "manifest.yaml")
 		if _, err := os.Stat(manifestPath); err == nil {
-			return moduleDir, nil
+			absDir, err := filepath.Abs(moduleDir)
+			if err != nil {
+				return "", i18n.Errorf("failed to resolve module path for %q: %w", name, err)
+			}
+			return absDir, nil
 		} else if !os.IsNotExist(err) {
 			return "", i18n.Errorf("failed to read module config for %q: %w", name, err)
 		}
