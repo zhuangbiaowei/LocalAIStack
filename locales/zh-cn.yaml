@@ -1,145 +1,13 @@
-? |4+
-    ```
-
-: 当然可以！请提供您需要翻译的文本，我会将其从英语翻译成中文。
-? |+
-    # LocalAIStack Base Info
-
-: '# LocalAIStack 基本信息'
-? |+
-    ## Raw Command Outputs
-
-: '## 原始命令的输出结果'
-? |+
-    ## System Information
-
-: '## 系统信息'
-? |
-    ### CPU
-: '### CPU'
-? |
-    ### Disk
-: '### 磁盘'
-? |
-    ### GPU
-: '### GPU（图形处理器）'
-? |
-    ### Kernel
-: '### 内核'
-? |
-    ### Memory
-: '### 内存'
-? |
-    ### Network
-: '### 网络'
-? |
-    ### OS
-: '### 操作系统（OS）'
-? |
-    ### Runtime
-: '### 运行时（Runtime）'
-? |
-    ### Version
-: '### 版本'
-'%.1f %cB': '%.1f %cB'
-'%s [%s]: ': '%s [%s]:'
-'%s kB': '%s 千字节'
-? |+
-    - Docker: %s
-    - Podman: %s
-    - Capabilities: %s
-
-: "- Docker: %s  \n- Podman: %s  \n- 功能（Capabilities）: %s"
-? |+
-    - GPU: %s
-
-: '- GPU：%s'
-? |+
-    - Hostname: %s
-    - Internal IPs: %s
-
-: "- 主机名：%s  \n- 内部 IP 地址：%s"
-? |+
-    - Kernel: %s
-
-: '- 内核：%s'
-? |+
-    - LocalAIStack: %s
-
-: '- LocalAIStack: %s'
-? |+
-    - Model: %s
-    - Cores: %d
-
-: "- 模型：%s  \n- 核心数量：%d"
-? |+
-    - OS: %s
-    - Arch: %s
-
-: "- 操作系统：%s  \n- 架构：%s"
-? |+
-    - Timestamp: %s
-
-: '- 时间戳：%s'
-? |+
-    - Total: %s
-
-: '- 总计：%s'
-? |+
-    - Total: %s
-    - Available: %s
-
-: |-
-    - 总计：%s
-    - 可用：%s
-? |+
-    <summary>%s</summary>
-
-: <summary>%s</summary>
-? |+
-    ```
-
-: 当然可以！请提供您需要翻译的文本。
-? |
-    ```text
-: 当然可以！请提供您需要翻译的文本，我会为您进行翻译。
-Base system info written to %s: 基础系统信息已写入到 %s 文件中。
-Configuration written to %s: 配置信息已写入到 %s 文件中。
+Check module installation status: 检查模块的安装状态。
 Detect hardware capabilities: 检测硬件功能
-Download a model: 下载一个模型
-Generate the autocompletion script for bash: 生成 Bash 自动补全脚本：
-Generate the autocompletion script for fish: |-
-    由于“fish”是一个非常通用的术语，它可以指代很多不同的东西（比如一种鱼、一种编程语言、一个工具名等），因此很难为其生成一个具体的“自动完成脚本”。如果您能提供更多关于“fish”的上下文信息（比如它是指哪种编程语言或工具），我可能能够给出更准确的建议。
-
-    不过，如果您是指某种特定的编程语言（比如 Python 中的 `fish` 模块），那么我可以为您生成一个简单的自动完成脚本。以下是一个使用 Python 的 `fish` 模块的自动完成脚本的示例：
-
-    ```python
-    # fish.py
-
-    def fish_command(command):
-        # 这里可以添加一些逻辑来解析命令并执行相应的操作
-        if command == "help":
-            print("Usage: fish <command>")
-            return ""
-        elif command == "list":
-            # 假设这里有一个命令列表
-            commands = ["command1", "command2", "command3"]
-            return commands
-        else:
-            print("Unknown command. Please try again.")
-            return ""
-
-    # 示例使用
-    command = input("Enter a command (e.g. help, list): ")
-    result = fish_command(command)
-    print(result)
-    ```
-
-    在这个脚本中，`fish_command` 函数接收一个命令作为参数，然后根据命令的不同执行相应的操作。如果您需要为其他特定的工具或编程语言生成类似的自动完成脚本，请提供更多详细信息！
+Download a model: 下载一个模型。
+'Error: %v': 错误：%v
+Generate the autocompletion script for bash: 生成 Bash 的自动补全脚本：
+Generate the autocompletion script for fish: 由于“fish”是一个非常通用的术语，它可以指代很多不同的东西（比如一种编程语言、一种鱼类、一款游戏等），因此很难为其生成一个具体的“自动完成脚本”。如果你能提供更多关于“fish”的上下文或具体指代的内容，我会更能够帮助你。例如，如果你是想为某种特定的编程语言（比如 Python 或 JavaScript）中的“fish”函数生成自动完成脚本，那么我就可以根据该语言的语法规范来生成相应的代码。
 ? |
     Generate the autocompletion script for localaistack for the specified shell.
     See each sub-command's help for details on how to use the generated script.
-: "为指定的 shell 生成 localizationstack 的自动完成脚本。  \n有关如何使用生成的脚本的详细信息，请参阅每个子命令的帮助文档。"
+: "为指定的 shell 生成 localaistack 的自动完成脚本。  \n有关如何使用生成的脚本的详细信息，请参阅每个子命令的帮助文档。"
 Generate the autocompletion script for powershell: |-
     以下是一个简单的 PowerShell 自动补全脚本示例：
 
@@ -148,24 +16,26 @@ Generate the autocompletion script for powershell: |-
     function AutoComplete() {
         $ completions = @(
             "Get-Item", "Set-Item", "Remove-Item", "New-Item",
-            "Test-String", "Write-String", "Stop-Process", "Start-Process",
-            "Dir", "Get-Date", "Sort-Object", "Sort-Array"
+            "Test-String", "Compare-String", "Sort-String",
+            "Write-Output", "Read-Output", "Stop-Process", "Start-Process"
         )
 
         $currentCommand = Get-Command
 
-        foreach ($command in $completions) {
-            if ($currentCommand.Name -like "$command") {
-                Write-Host "建议的补全选项: $command"
+        foreach ($completion in $completions) {
+            if ($currentCommand.Name -like "$completion") {
+                Write-Host "$completion"
             }
         }
     }
 
-    # 测试自动补全功能
+    # 使用自动补全功能
     AutoComplete
     ```
 
-    将上述脚本保存为一个 `.ps1` 文件（例如 `AutoComplete.ps1`），然后在 PowerShell 中运行它。当你输入一个命令的前几个字符时，脚本会显示与该命令匹配的推荐补全选项。
+    这个脚本定义了一个名为 `AutoComplete` 的函数，该函数会列出一些常见的 PowerShell 命令。当用户在 PowerShell 控制台中输入命令时，这个函数会检查当前输入的命令是否与列表中的某个命令匹配，并在匹配的情况下显示相应的命令建议。用户可以选择其中一个建议来继续输入命令。
+
+    要使用这个自动补全脚本，只需在 PowerShell 控制台中运行 `AutoComplete` 即可。
 ? |
     Generate the autocompletion script for powershell.
 
@@ -221,18 +91,21 @@ Generate the autocompletion script for powershell: |-
     该脚本依赖于 `bash-completion` 包。如果尚未安装该包，您可以通过操作系统的包管理器进行安装。
 
     **在当前 shell 会话中加载自动补全功能：**
+
     ```bash
     source <(localaistack completion bash)
     ```
 
-    **为了在每个新的 shell 会话中都加载自动补全功能，请执行以下命令（只需执行一次）：**
+    **为每个新的 shell 会话加载自动补全功能：**
 
     #### Linux：
+
     ```bash
     localaistack completion bash > /etc/bash_completion.d/localaistack
     ```
 
     #### macOS：
+
     ```bash
     localaistack completion bash > $(brew --prefix)/etc/bash_completion.d/localaistack
     ```
@@ -253,19 +126,19 @@ Generate the autocompletion script for powershell: |-
 : |-
     以下是用于 Fish Shell 的自动补全脚本：
 
-    **在当前 shell 会话中加载自动补全功能：**
+    **在当前 Shell 会话中加载自动补全功能：**
 
     ```bash
     local aistack completion fish | source
     ```
 
-    **为每个新的 shell 会话加载自动补全功能（只需执行一次即可）：**
+    **为每个新的 Shell 会话加载自动补全功能（只需执行一次）：**
 
     ```bash
     local aistack completion fish > ~/.config/fish/completions/localaistack.fish
     ```
 
-    请注意：要使这些设置生效，你需要重新启动一个新的 Fish Shell 实例。
+    请注意：要使这些设置生效，你需要重新启动一个新的 Shell 会话。
 Generate the autocompletion script for the specified shell: |-
     根据您的要求，以下是一个简单的自动补全脚本，适用于大多数常见的 shell（如 Bash、Zsh 等）：
 
@@ -273,32 +146,54 @@ Generate the autocompletion script for the specified shell: |-
     #!/bin/bash
 
     function autocompletion() {
-      local completions=()
-      local current_word=$1
+      local completion_file="$1"
+      local current_word="$2"
+      local suggestions ""
 
-      # 根据当前输入的单词，从预定义的补全列表中生成建议
-      for item in "${completions[@]}"; do
-        if [[ $item == "${current_word}" ]]; then
-          echo "$item"
-          return 1
+      # 检查 completion_file 是否存在
+      if [ -e "$completion_file" ]; then
+        # 从文件中读取建议
+        read suggestions << "$completion_file"
+      else
+        # 如果文件不存在，生成一些基本的建议
+        suggestions="word suggestions"
+      fi
+
+      # 将当前单词添加到建议列表中
+      suggestions="${current_word}"
+
+      # 根据当前单词生成更具体的建议
+      for suggestion in "${suggestions[@]}"; do
+        # 检查建议是否以 "complete-" 开头
+        if [ ${ suggestion ### "complete-" -eq 0 ]; then
+          # 如果是，说明这是一个完整的命令建议
+          suggestions="${suggestion}"
+          continue
         fi
+
+        # 检查建议是否以 "tab" 或 "space" 结尾
+        if [ ${ suggestion ### "tab" -eq 0 ] || [ ${ suggestion ### "space" -eq 0 ]; then
+          # 如果是，说明这是一个补全选项建议
+          suggestions="${suggestion}"
+          continue
+        fi
+
+        # 将建议添加到建议列表中
+        suggestions="${suggestions}${suggestion}"
       done
 
-      # 如果没有找到匹配的补全项，提示用户输入更多内容
-      echo "No matching completion found. Please provide more details."
+      # 显示建议
+      echo "Suggestions for: ${current_word}"
+      echo "$suggestions"
     }
 
-    # 示例：使用 autocompletion 函数
-    autocompletion "hello"
+    # 使用 autocompletion 函数
+    autocompletion "your_command"
     ```
 
-    将上述脚本保存为 `autocompletion.sh`，然后通过运行 `chmod +x autocompletion.sh` 使其可执行。接下来，您可以在 shell 中使用 `autocompletion` 函数来获取补全建议。例如：
+    将上述脚本保存为 `autocompletion.sh`，并通过运行 `chmod +x autocompletion.sh` 使其可执行。然后，您可以在 shell 中使用 `autocompletion your_command` 来尝试自动补全该命令的相关建议。
 
-    ```bash
-    autocompletion "hello"
-    ```
-
-    这个脚本会显示与 “hello” 相关的补全选项。您可以根据需要修改 `completions` 变量中的内容，以包含更多的补全项。
+    请注意，这个脚本仅提供了一个基本的自动补全功能。根据您的具体需求，您可能需要对其进行修改或扩展，以便更好地满足您的使用习惯。
 ? |
     Generate the autocompletion script for the zsh shell.
 
@@ -323,9 +218,9 @@ Generate the autocompletion script for the specified shell: |-
 
     You will need to start a new shell for this setup to take effect.
 : |-
-    以下是为 zsh shell 编写的自动补全脚本：
+    以下是用于 Zsh shell 的自动补全脚本：
 
-    如果您的环境中尚未启用 shell 自动补全功能，您需要先将其启用。您可以执行以下命令一次：
+    如果您的环境中尚未启用自动补全功能，您需要先将其启用。您可以执行以下命令一次：
 
     ```bash
     echo "autoload -U compinit; compinit" >> ~/.zshrc
@@ -351,16 +246,17 @@ Generate the autocompletion script for the specified shell: |-
     localaistack completion zsh > $(brew --prefix)/share/zsh/site-functions/_localaistack
     ```
 
-    请注意，这些设置需要通过启动一个新的 shell 会话才能生效。
+    请注意，这些设置需要重新启动一个新的 shell 才能生效。
 Generate the autocompletion script for zsh: 生成 zsh 的自动补全脚本：
 Get service status: 获取服务状态
 Help about any command: 关于任何命令的帮助信息
 ? |-
     Help provides help for any command in the application.
     Simply type localaistack help [path to command] for full details.
-: "“帮助”功能可以为应用程序中的任何命令提供使用说明。  \n只需输入 `localaistack help [命令路径]`，即可查看详细的命令使用信息。"
+: "“帮助”功能可以为应用程序中的任何命令提供使用说明。  \n只需输入 `localaistack help [命令路径]`，即可查看该命令的完整详细信息。"
 Initialize LocalAIStack interactive configuration: 初始化 LocalAIStack 的交互式配置
 Install a module: 安装一个模块。
+'Installing module: %s': 正在安装模块：%s
 List all available modules: 列出所有可用的模块。
 List available LLM providers: 以下是可用的大型语言模型（LLM）提供商列表：
 List downloaded models: 已下载的模型列表
@@ -371,11 +267,14 @@ Manage AI models: 管理人工智能模型
 Manage LLM providers: 管理大型语言模型（LLM）提供商
 Manage services: 管理服务
 Manage software modules: 管理软件模块
+Module %s installed successfully.: 模块 %s 安装成功。
+Module %s is installed and healthy.: 模块 %s 已成功安装，并且运行状态正常。
+Module %s uninstalled successfully.: 模块 %s 已成功卸载。
+'Module check failed: %s': 模块检查失败：%s
+'Module uninstall failed: %s': 模块卸载失败：%s
 Preferred interaction language: 首选的交互语言
-Preferred language: 首选语言
 Search for models: 搜索模型
 Show system information: 显示系统信息
-SiliconFlow API Key: SiliconFlow API密钥
 SiliconFlow API key: SiliconFlow API密钥
 Start a service: 启动一个服务
 Stop a service: 停止一个服务
@@ -386,18 +285,15 @@ Translation provider: 翻译服务提供商
 Translation timeout in seconds: 翻译超时时间（以秒为单位）
 Uninstall a module: 卸载一个模块
 'Uninstalling module: %s': 正在卸载模块：%s
-'Module %s uninstalled successfully.': 模块 %s 已成功卸载。
-'Module uninstall failed: %s': 模块卸载失败：%s
-'available: %s': 可用：%s
 config file (default is $HOME/.localaistack/config.yaml): 配置文件（默认路径为 $HOME/.localaistack/config.yaml）
 config file path (default is ~/.localaistack/config.yaml): 配置文件路径（默认为 ~/.localaistack/config.yaml）
 disable completion descriptions: 禁用补全描述
-docker=%s; podman=%s: docker=%s; podman=%s
-'error: %s': 错误：%s
-help for init: "关于 `init` 的帮助信息：  \n`init` 是一个用于初始化系统或程序的命令或函数。它的具体用途取决于上下文。在 Linux 系统中，`init` 负责在系统启动时加载必要的服务（如内核模块、启动脚本等），并确保系统能够正常运行。在不同的编程语言和框架中，`init` 的实现也可能有所不同。例如，在 Python 中，你可能会使用 `init()` 函数来初始化一个对象；在 Java 中，你可能会使用构造函数来初始化一个类实例。  \n\n如果你需要更多关于 `init` 的详细信息，请提供更多的上下文或具体的编程语言/框架，以便我能给出更准确的帮助。"
-'stdout:': 'stdout:'
-'unknown (%s): %s': 未知（%s）：%s
-'unknown: %s': 未知：%s
+help for check: 关于检查的帮助信息
+help for help: “help for help” 的意思是“寻求帮助以获得帮助”。
+help for install: 安装帮助
+help for uninstall: 关于卸载的帮助：
+'module %q check failed: %w': 模块 %q 的检查失败：%w
+'module %q uninstall failed: %s': 模块 %q 的卸载失败：%s
 verbose output: 详细输出（verbose output）
 详细输出（verbose output）: 详细输出（verbose output）：
 详细输出（verbose output）：: 详细输出（verbose output）：
