@@ -1,0 +1,136 @@
+apiVersion: las.installspec/v0.1.2
+kind: InstallPlan
+
+id: ollama
+category: runtime
+
+supported_platforms:
+  - linux/amd64
+  - linux/arm64
+
+install_modes:
+  - native
+
+rebuild_modes:
+  - none
+  - soft
+  - full
+
+tools_required:
+  - bash
+  - curl
+  - systemctl
+
+description:
+  purpose: Install and manage the Ollama runtime via systemd
+  scope:
+    - install
+    - configure
+    - verify
+    - rollback
+    - uninstall
+    - purge
+  non_goals:
+    - manage models
+    - expose remote network access
+
+dependencies:
+  system:
+    - curl
+    - ca-certificates
+
+preconditions:
+  - id: P10
+    intent: Must be Linux
+    tool: shell
+    command: uname -s
+    expected:
+      equals: Linux
+  - id: P20
+    intent: systemd available
+    tool: shell
+    command: command -v systemctl
+    expected:
+      exit_code: 0
+
+decision_matrix:
+  default: native
+  rules: []
+
+environment_rebuild:
+  detect:
+    - id: R10
+      intent: Detect existing Ollama artifacts
+      tool: shell
+      command: test -f /usr/local/bin/ollama || test -f /etc/systemd/system/ollama.service
+      expected:
+        exit_code: 0
+  soft_cleanup:
+    - id: C10
+      intent: Soft cleanup
+      tool: shell
+      command: bash scripts/cleanup_soft.sh
+      expected:
+        exit_code: 0
+  full_cleanup:
+    - id: C20
+      intent: Full cleanup
+      tool: shell
+      command: bash scripts/cleanup_full.sh
+      expected:
+        exit_code: 0
+
+install:
+  native:
+    - id: S10
+      intent: Download and install Ollama
+      tool: shell
+      command: curl -fsSL https://ollama.com/install.sh | bash
+      expected:
+        bin: /usr/local/bin/ollama
+      idempotent: true
+    - id: S20
+      intent: Install systemd service unit
+      tool: template
+      edit:
+        template: templates/ollama.service.tmpl
+        destination: /etc/systemd/system/ollama.service
+      expected:
+        unit: /etc/systemd/system/ollama.service
+      idempotent: true
+    - id: S30
+      intent: Enable and start service
+      tool: shell
+      command: systemctl daemon-reload && systemctl enable --now ollama
+      expected:
+        service: active
+      idempotent: true
+
+configuration:
+  required: false
+  defaults:
+    bind: 127.0.0.1:11434
+  templates:
+    - templates/ollama.service.tmpl
+
+verification:
+  script: scripts/verify.sh
+
+rollback:
+  script: scripts/rollback.sh
+
+uninstall:
+  script: scripts/uninstall.sh
+  preserves:
+    - ~/.ollama
+
+purge:
+  script: scripts/purge.sh
+  destructive: true
+
+security:
+  network:
+    bind: localhost
+    auth: none
+  privileges:
+    requires_sudo: true
