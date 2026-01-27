@@ -94,14 +94,14 @@ install:
       tool: template
       edit:
         template: templates/ollama.service.tmpl
-        destination: /etc/systemd/system/ollama.service
+        destination: /tmp/ollama.service
       expected:
-        unit: /etc/systemd/system/ollama.service
+        unit: /tmp/ollama.service
       idempotent: true
     - id: S30
       intent: Enable and start service
       tool: shell
-      command: systemctl daemon-reload && systemctl enable --now ollama
+      command: bash scripts/install_service.sh /tmp/ollama.service
       expected:
         service: active
       idempotent: true
