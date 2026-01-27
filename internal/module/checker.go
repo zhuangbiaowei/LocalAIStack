@@ -60,7 +60,7 @@ func runModuleCheck(name, moduleDir string) error {
 	if err != nil {
 		message := strings.TrimSpace(string(output))
 		if message == "" {
-			return i18n.Errorf("module %q check failed: %w", name, err)
+			return i18n.Errorf("module %q check failed: %v", name, err)
 		}
 		return i18n.Errorf("module %q check failed: %s", name, message)
 	}

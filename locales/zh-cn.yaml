@@ -1,4 +1,105 @@
+? |4+
+    ```
+
+: 当然可以！请提供您需要翻译的文本。
+? |+
+    # LocalAIStack Base Info
+
+: '# LocalAIStack 基本信息'
+? |+
+    ## Raw Command Outputs
+
+: '## 原始命令的输出结果'
+? |+
+    ## System Information
+
+: '## 系统信息'
+? |
+    ### CPU
+: '### CPU'
+? |
+    ### Disk
+: '### 硬盘'
+? |
+    ### GPU
+: '### GPU（图形处理器）'
+? |
+    ### Kernel
+: '### 内核（Kernel）'
+? |
+    ### Memory
+: '### 内存'
+? |
+    ### Network
+: '### 网络'
+? |
+    ### OS
+: '### 操作系统（OS）'
+? |
+    ### Runtime
+: '### 运行时（Runtime）'
+? |
+    ### Version
+: '### 版本'
+'%.1f %cB': '%.1f %cB'
+'%s [%s]: ': '%s [%s]:'
+'%s kB': '%s 千字节'
+? |+
+    - Docker: %s
+    - Podman: %s
+    - Capabilities: %s
+
+: "- Docker: %s  \n- Podman: %s  \n- 功能（Capabilities）: %s"
+? |+
+    - GPU: %s
+
+: '- GPU：%s'
+? |+
+    - Hostname: %s
+    - Internal IPs: %s
+
+: "- 主机名：%s  \n- 内部 IP 地址：%s"
+? |+
+    - Kernel: %s
+
+: '- 内核：%s'
+? |+
+    - LocalAIStack: %s
+
+: '- LocalAIStack: %s'
+? |+
+    - Model: %s
+    - Cores: %d
+
+: "- 模型：%s  \n- 核心数量：%d"
+? |+
+    - OS: %s
+    - Arch: %s
+
+: "- 操作系统：%s  \n- 架构：%s"
+? |+
+    - Timestamp: %s
+
+: '- 时间戳：%s'
+? |+
+    - Total: %s
+
+: '- 总计：%s'
+? |+
+    - Total: %s
+    - Available: %s
+
+: "- 总计：%s  \n- 可用：%s"
+? |+
+    <summary>%s</summary>
+
+: <summary>%s</summary>
+? |
+    ```text
+: 当然可以！请提供您需要翻译的文本，我会将其从英语翻译成中文。
+Base system info written to %s: 基础系统信息已写入到 %s 文件中。
 Check module installation status: 检查模块的安装状态。
+Configuration written to %s: 配置信息已写入到 %s 文件中。
 Detect hardware capabilities: 检测硬件功能
 Download a model: 下载一个模型。
 'Error: %v': 错误：%v
@@ -273,8 +374,10 @@ Module %s uninstalled successfully.: 模块 %s 已成功卸载。
 'Module check failed: %s': 模块检查失败：%s
 'Module uninstall failed: %s': 模块卸载失败：%s
 Preferred interaction language: 首选的交互语言
+Preferred language: 首选语言
 Search for models: 搜索模型
 Show system information: 显示系统信息
+SiliconFlow API Key: SiliconFlow API密钥
 SiliconFlow API key: SiliconFlow API密钥
 Start a service: 启动一个服务
 Stop a service: 停止一个服务
@@ -285,15 +388,22 @@ Translation provider: 翻译服务提供商
 Translation timeout in seconds: 翻译超时时间（以秒为单位）
 Uninstall a module: 卸载一个模块
 'Uninstalling module: %s': 正在卸载模块：%s
+'available: %s': 可用：%s
 config file (default is $HOME/.localaistack/config.yaml): 配置文件（默认路径为 $HOME/.localaistack/config.yaml）
 config file path (default is ~/.localaistack/config.yaml): 配置文件路径（默认为 ~/.localaistack/config.yaml）
 disable completion descriptions: 禁用补全描述
+docker=%s; podman=%s: docker=%s; podman=%s
+'error: %s': 错误：%s
 help for check: 关于检查的帮助信息
 help for help: “help for help” 的意思是“寻求帮助以获得帮助”。
+help for init: "关于 `init` 的帮助信息：  \n`init` 是一个用于初始化系统或程序的命令或函数。它的具体用途取决于上下文。在 Linux 系统中，`init` 负责在系统启动时加载并运行必要的服务（称为“守护进程”或“系统进程”）。用户通常通过修改 `/etc/init.d/` 目录下的脚本文件来定制系统的启动过程。在某些系统中，`init` 也可能指特定的初始化程序或工具。  \n\n如果您需要更详细的帮助，请提供更多关于您所使用的环境或工具的信息，以便我能给出更具体的指导。"
 help for install: 安装帮助
 help for uninstall: 关于卸载的帮助：
-'module %q check failed: %w': 模块 %q 的检查失败：%v
+'module %q check failed: %v': 模块 %q 的检查失败：%v
 'module %q uninstall failed: %s': 模块 %q 的卸载失败：%s
+'stdout:': 'stdout:'
+'unknown (%s): %s': 未知（%s）：%s
+'unknown: %s': 未知：%s
 verbose output: 详细输出（verbose output）
 详细输出（verbose output）: 详细输出（verbose output）：
 详细输出（verbose output）：: 详细输出（verbose output）：
