@@ -2,6 +2,7 @@ package commands
 
 import (
 	"sort"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/i18n"
@@ -71,39 +72,19 @@ func RegisterModuleCommands(rootCmd *cobra.Command) {
 			}
 			sort.Strings(names)
 
-			installed := make([]string, 0, len(names))
-			notInstalled := make([]string, 0, len(names))
-			for _, name := range names {
-				if err := module.Check(name); err != nil {
-					notInstalled = append(notInstalled, name)
-					continue
-				}
-				installed = append(installed, name)
-			}
-
 			cmd.Println(i18n.T("Manageable modules:"))
 			if len(names) == 0 {
 				cmd.Println(i18n.T("- none"))
 			}
+			writer := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 			for _, name := range names {
-				cmd.Printf("%s\n", i18n.T("- %s", name))
+				status := i18n.T("Not installed")
+				if err := module.Check(name); err == nil {
+					status = i18n.T("Installed")
+				}
+				_, _ = writer.Write([]byte(i18n.T("- %s\t%s\n", name, status)))
 			}
-
-			cmd.Println(i18n.T("Installed modules:"))
-			if len(installed) == 0 {
-				cmd.Println(i18n.T("- none"))
-			}
-			for _, name := range installed {
-				cmd.Printf("%s\n", i18n.T("- %s", name))
-			}
-
-			cmd.Println(i18n.T("Not installed modules:"))
-			if len(notInstalled) == 0 {
-				cmd.Println(i18n.T("- none"))
-			}
-			for _, name := range notInstalled {
-				cmd.Printf("%s\n", i18n.T("- %s", name))
-			}
+			_ = writer.Flush()
 		},
 	}
 

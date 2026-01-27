@@ -166,7 +166,7 @@ Generate the autocompletion script for powershell: |-
     3. 保存文件并关闭编辑器。
     4. 重新启动 PowerShell，此时新的会话将自动具备自动补全功能。
 ? |
-    Generate the autocompletion script for the bash shell.
+Generate the autocompletion script for the bash shell.
 
     This script depends on the 'bash-completion' package.
     If it is not installed already, you can install it via your OS's package manager.
@@ -408,3 +408,8 @@ verbose output: 详细输出（verbose output）
 详细输出（verbose output）: 详细输出（verbose output）：
 详细输出（verbose output）：: 详细输出（verbose output）：
 配置文件（默认路径为 $HOME/.localaistack/config.yaml）: 配置文件（默认路径为 $HOME/.localaistack/config.yaml）
+Manageable modules:: 可管理的模块：
+Installed: 已安装
+Not installed: 未安装
+- none: - 无
+"- %s\t%s\n": "- %s\t%s\n"
