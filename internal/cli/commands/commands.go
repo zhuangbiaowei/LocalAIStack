@@ -17,8 +17,9 @@ func init() {
 
 func RegisterModuleCommands(rootCmd *cobra.Command) {
 	moduleCmd := &cobra.Command{
-		Use:   "module",
-		Short: "Manage software modules",
+		Use:     "module",
+		Short:   "Manage software modules",
+		Aliases: []string{"modules"},
 	}
 
 	installCmd := &cobra.Command{

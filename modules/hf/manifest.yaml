@@ -1,0 +1,19 @@
+name: hf
+category: tooling
+version: 0.1.0
+description: Hugging Face Hub CLI for managing models, datasets, and repos
+license: Apache-2.0
+
+dependencies:
+  system:
+    - python3
+    - python3-pip
+
+runtime:
+  modes:
+    - python
+  preferred: python
+
+interfaces:
+  provides:
+    - hf_cli
