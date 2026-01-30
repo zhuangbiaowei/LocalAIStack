@@ -1,5 +1,5 @@
 name: hf
-category: tooling
+category: tool
 version: 0.1.0
 description: Hugging Face Hub CLI for managing models, datasets, and repos
 license: Apache-2.0
