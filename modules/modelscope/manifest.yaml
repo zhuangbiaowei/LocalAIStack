@@ -1,0 +1,20 @@
+name: modelscope
+category: tool
+version: 0.1.0
+description: ModelScope SDK and CLI for downloading and managing models
+license: Apache-2.0
+
+dependencies:
+  system:
+    - python3
+    - python3-pip
+
+runtime:
+  modes:
+    - python
+  preferred: python
+
+interfaces:
+  provides:
+    - modelscope_cli
+    - modelscope_sdk
