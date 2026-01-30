@@ -2,7 +2,7 @@ apiVersion: las.installspec/v0.1.2
 kind: InstallPlan
 
 id: hf
-category: tooling
+category: tool
 
 supported_platforms:
   - linux/amd64
