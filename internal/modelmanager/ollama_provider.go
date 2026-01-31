@@ -167,6 +167,21 @@ func parseLibraryTagSizes(htmlContent string) []string {
 	return sizes
 }
 
+func tagSizeFromName(modelName string) string {
+	parts := strings.SplitN(modelName, ":", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	tag := strings.ToLower(strings.TrimSpace(parts[1]))
+	if tag == "" {
+		return ""
+	}
+	if ok, _ := regexp.MatchString(`^\d+(\.\d+)?b$`, tag); ok {
+		return tag
+	}
+	return ""
+}
+
 func (p *OllamaProvider) searchFromLibrary(ctx context.Context, query string) ([]ModelInfo, error) {
 	url := fmt.Sprintf("%s?q=%s", ollamaLibraryURL, query)
 
@@ -295,7 +310,10 @@ func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit
 
 		size := strings.TrimSpace(om.Details.ParameterSize)
 		if size == "" {
-			size = FormatBytes(om.Size)
+			size = tagSizeFromName(om.Name)
+			if size == "" {
+				size = FormatBytes(om.Size)
+			}
 		}
 		if size != "" {
 			if sizeSets[baseName] == nil {
