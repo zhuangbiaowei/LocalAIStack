@@ -10,12 +10,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
 const (
 	ollamaAPIURL     = "https://ollama.com/api"
+	ollamaLibraryURL = "https://ollama.com/library"
 	ollamaAPITimeout = 30 * time.Second
 )
 
@@ -53,7 +55,92 @@ type OllamaTagsResponse struct {
 	Models []OllamaAPIModel `json:"models"`
 }
 
+type OllamaLibraryModel struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags"`
+	Pulls       string   `json:"pulls"`
+}
+
 func (p *OllamaProvider) Search(ctx context.Context, query string, limit int) ([]ModelInfo, error) {
+	if query == "" {
+		return p.searchFromTags(ctx, query, limit)
+	}
+
+	libraryModels, err := p.searchFromLibrary(ctx, query)
+	if err != nil {
+		return p.searchFromTags(ctx, query, limit)
+	}
+
+	if len(libraryModels) == 0 {
+		return p.searchFromTags(ctx, query, limit)
+	}
+
+	return libraryModels, nil
+}
+
+func (p *OllamaProvider) searchFromLibrary(ctx context.Context, query string) ([]ModelInfo, error) {
+	url := fmt.Sprintf("%s?q=%s", ollamaLibraryURL, query)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "text/html")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.parseLibraryHTML(string(body), query)
+}
+
+func (p *OllamaProvider) parseLibraryHTML(htmlContent string, query string) ([]ModelInfo, error) {
+	var models []ModelInfo
+	queryLower := strings.ToLower(query)
+
+	modelPattern := regexp.MustCompile(`<h2[^>]*>([^<]+)</h2>\s*<p>([^<]+)</p>`)
+	matches := modelPattern.FindAllStringSubmatch(htmlContent, -1)
+
+	for _, match := range matches {
+		if len(match) < 3 {
+			continue
+		}
+
+		name := strings.TrimSpace(match[1])
+		description := strings.TrimSpace(match[2])
+
+		if query != "" && !strings.Contains(strings.ToLower(name), queryLower) {
+			continue
+		}
+
+		models = append(models, ModelInfo{
+			ID:          name,
+			Name:        name,
+			Description: description,
+			Source:      SourceOllama,
+			Format:      FormatOllama,
+			Tags:        []string{},
+			Metadata:    map[string]string{},
+		})
+	}
+
+	return models, nil
+}
+
+func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit int) ([]ModelInfo, error) {
 	url := fmt.Sprintf("%s/tags", ollamaAPIURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
