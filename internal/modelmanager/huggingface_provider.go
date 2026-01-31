@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	hfAPIURL     = "https://huggingface.co/api"
-	hfModelURL   = "https://huggingface.co"
-	hfAPITimeout = 60 * time.Second
-	chunkSize    = 1024 * 1024
+	hfAPIURL          = "https://huggingface.co/api"
+	hfModelURL        = "https://huggingface.co"
+	hfAPITimeout      = 60 * time.Second
+	hfDownloadTimeout = 30 * time.Minute
+	chunkSize         = 1024 * 1024
 )
 
 type HuggingFaceProvider struct {
@@ -217,6 +218,10 @@ func (p *HuggingFaceProvider) listModelFiles(ctx context.Context, modelID string
 }
 
 func (p *HuggingFaceProvider) downloadFile(ctx context.Context, url, destPath string, totalSize int64, progress func(downloaded, total int64)) error {
+	downloadClient := &http.Client{
+		Timeout: hfDownloadTimeout,
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return err
@@ -226,7 +231,7 @@ func (p *HuggingFaceProvider) downloadFile(ctx context.Context, url, destPath st
 		req.Header.Set("Authorization", "Bearer "+p.token)
 	}
 
-	resp, err := p.client.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
 		return err
 	}

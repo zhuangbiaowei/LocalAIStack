@@ -1,12 +1,14 @@
 package modelmanager
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -121,6 +123,10 @@ func (p *OllamaProvider) Download(ctx context.Context, modelID string, destPath 
 		return fmt.Errorf("failed to create model directory: %w", err)
 	}
 
+	if err := p.pullModel(ctx, modelID, progress); err != nil {
+		return fmt.Errorf("failed to pull Ollama model: %w", err)
+	}
+
 	metadata := map[string]interface{}{
 		"id":        modelID,
 		"source":    "ollama",
@@ -141,7 +147,49 @@ func (p *OllamaProvider) Download(ctx context.Context, modelID string, destPath 
 		return fmt.Errorf("failed to write metadata: %w", err)
 	}
 
-	return fmt.Errorf("Ollama CLI integration not implemented. Please run: ollama pull %s", modelID)
+	return nil
+}
+
+func (p *OllamaProvider) pullModel(ctx context.Context, modelID string, progress func(downloaded, total int64)) error {
+	cmd := exec.CommandContext(ctx, "ollama", "pull", modelID)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start ollama pull: %w", err)
+	}
+
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if progress != nil {
+				progress(0, 0)
+			}
+			_ = line
+		}
+	}()
+
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			_ = scanner.Text()
+		}
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("ollama pull failed: %w", err)
+	}
+
+	return nil
 }
 
 func (p *OllamaProvider) GetModelInfo(ctx context.Context, modelID string) (*ModelInfo, error) {
