@@ -2,6 +2,8 @@
 Check module installation status: 检查模块的安装状态。
 Detect hardware capabilities: 检测硬件功能
 Download a model: 下载一个模型。
+'Error: %v': 错误：%v
+Force removal without confirmation: 强制移除，无需确认
 Generate the autocompletion script for bash: 生成 Bash 的自动补全脚本：
 Generate the autocompletion script for fish: |-
     由于“fish”是一个非常通用的术语，它可以指代很多不同的东西（比如一种编程语言、一种鱼类、一种工具等），因此很难为其生成一个具体的“自动完成脚本”。如果您能提供更多关于您想要生成的自动完成脚本的具体信息（比如它应该用于哪种编程语言、它应该支持哪些功能等），我会更能够帮助您。
@@ -345,6 +347,7 @@ Help about any command: 关于任何命令的帮助信息
 Initialize LocalAIStack interactive configuration: 初始化 LocalAIStack 的交互式配置
 Install a module: 安装一个模块。
 Installed: 已安装
+'Installing module: %s': 正在安装模块：%s
 List all available modules: 列出所有可用的模块。
 List available LLM providers: 以下是可用的大型语言模型（LLM）提供商列表：
 List downloaded models: 已下载的模型列表
@@ -356,11 +359,18 @@ Manage LLM providers: 管理大型语言模型（LLM）提供商
 Manage services: 管理服务
 Manage software modules: 管理软件模块
 'Manageable modules:': 可管理的模块：
+Maximum number of results per source: 每个来源的最大结果数量
+Module %s installed successfully.: 模块 %s 安装成功。
+Module %s uninstalled successfully.: 模块 %s 已成功卸载。
+'Module install failed: %s': 模块安装失败：%s
 Not installed: 未安装
 Preferred interaction language: 首选的交互语言
+Remove a downloaded model: 删除已下载的模型。
 Search for models: 搜索模型
 Show system information: 显示系统信息
 SiliconFlow API key: SiliconFlow API密钥
+Source to download from (ollama, huggingface, modelscope): 可以从以下来源下载模型：ollama、huggingface、modelscope。
+Source to search (ollama, huggingface, modelscope, or all): 要搜索的来源（ollama、huggingface、modelscope 或全部）：
 Start a service: 启动一个服务
 Stop a service: 停止一个服务
 System management: 系统管理
@@ -369,10 +379,17 @@ Translation model: 翻译模型
 Translation provider: 翻译服务提供商
 Translation timeout in seconds: 翻译超时时间（以秒为单位）
 Uninstall a module: 卸载一个模块
+'Uninstalling module: %s': 正在卸载模块：%s
 config file (default is $HOME/.localaistack/config.yaml): 配置文件（默认路径为 $HOME/.localaistack/config.yaml）
 config file path (default is ~/.localaistack/config.yaml): 配置文件路径（默认为 ~/.localaistack/config.yaml）
 disable completion descriptions: 禁用补全描述
+help for download: 关于下载的帮助信息
+help for install: 安装帮助
 help for list: 关于列表的帮助信息：
+help for search: 搜索帮助
+help for uninstall: 关于卸载的帮助
+'install step %s failed: %w': 安装步骤 %s 失败：%w
+'module %q check failed: %s': 模块 %q 的检查失败：%s
 'module %q check failed: %v': 模块 %q 的检查失败：%v
 verbose output: 详细输出（verbose output）
 详细输出（verbose output）: 详细输出（verbose output）：

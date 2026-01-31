@@ -2,12 +2,17 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/i18n"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/llm"
+	"github.com/zhuangbiaowei/LocalAIStack/internal/modelmanager"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/module"
 )
 
@@ -156,36 +161,202 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 		Short: "Manage AI models",
 	}
 
-	pullCmd := &cobra.Command{
-		Use:   "pull [model-name]",
-		Short: "Download a model",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Printf("%s\n", i18n.T("Pulling model: %s", args[0]))
-		},
-	}
-
-	listCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List downloaded models",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println(i18n.T("Downloaded models:"))
-		},
-	}
-
 	searchCmd := &cobra.Command{
 		Use:   "search [query]",
 		Short: "Search for models",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Printf("%s\n", i18n.T("Searching for: %s", args[0]))
+		RunE: func(cmd *cobra.Command, args []string) error {
+			query := args[0]
+			source, _ := cmd.Flags().GetString("source")
+			limit, _ := cmd.Flags().GetInt("limit")
+
+			mgr := createModelManager()
+
+			if source != "" && source != "all" {
+				var src modelmanager.ModelSource
+				switch strings.ToLower(source) {
+				case "ollama":
+					src = modelmanager.SourceOllama
+				case "huggingface", "hf":
+					src = modelmanager.SourceHuggingFace
+				case "modelscope":
+					src = modelmanager.SourceModelScope
+				default:
+					return fmt.Errorf("unknown source: %s", source)
+				}
+
+				provider, err := mgr.GetProvider(src)
+				if err != nil {
+					return err
+				}
+
+				models, err := provider.Search(cmd.Context(), query, limit)
+				if err != nil {
+					return err
+				}
+
+				displaySearchResults(cmd, src, models)
+			} else {
+				results, err := mgr.SearchAll(query, limit)
+				if err != nil {
+					return err
+				}
+
+				for src, models := range results {
+					displaySearchResults(cmd, src, models)
+				}
+			}
+
+			return nil
+		},
+	}
+	searchCmd.Flags().StringP("source", "s", "all", "Source to search (ollama, huggingface, modelscope, or all)")
+	searchCmd.Flags().IntP("limit", "n", 10, "Maximum number of results per source")
+
+	downloadCmd := &cobra.Command{
+		Use:   "download [model-id]",
+		Short: "Download a model",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			modelID := args[0]
+			source, _ := cmd.Flags().GetString("source")
+
+			mgr := createModelManager()
+
+			var src modelmanager.ModelSource
+			if source != "" {
+				switch strings.ToLower(source) {
+				case "ollama":
+					src = modelmanager.SourceOllama
+				case "huggingface", "hf":
+					src = modelmanager.SourceHuggingFace
+				case "modelscope":
+					src = modelmanager.SourceModelScope
+				default:
+					return fmt.Errorf("unknown source: %s", source)
+				}
+			} else {
+				var err error
+				src, modelID, err = modelmanager.ParseModelID(modelID)
+				if err != nil {
+					return err
+				}
+			}
+
+			cmd.Printf("Downloading model from %s: %s\n", src, modelID)
+
+			progress := func(downloaded, total int64) {
+				if total > 0 {
+					percent := float64(downloaded) * 100 / float64(total)
+					cmd.Printf("\rProgress: %.1f%% (%s / %s)", percent,
+						modelmanager.FormatBytes(downloaded), modelmanager.FormatBytes(total))
+				}
+			}
+
+			if err := mgr.DownloadModel(src, modelID, progress); err != nil {
+				return fmt.Errorf("failed to download model: %w", err)
+			}
+
+			cmd.Println("\nModel downloaded successfully!")
+			return nil
+		},
+	}
+	downloadCmd.Flags().StringP("source", "s", "", "Source to download from (ollama, huggingface, modelscope)")
+
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List downloaded models",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mgr := createModelManager()
+
+			models, err := mgr.ListDownloadedModels()
+			if err != nil {
+				return err
+			}
+
+			if len(models) == 0 {
+				cmd.Println("No models downloaded yet.")
+				return nil
+			}
+
+			writer := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+			fmt.Fprintln(writer, "NAME\tSOURCE\tFORMAT\tSIZE\tDOWNLOADED")
+
+			for _, model := range models {
+				size, _ := mgr.GetModelSize(model.ID)
+				downloadTime := time.Unix(model.DownloadedAt, 0).Format("2006-01-02 15:04")
+				fmt.Fprintf(writer, "%s\t%s\t%s\t%s\t%s\n",
+					model.ID, model.Source, model.Format,
+					modelmanager.FormatBytes(size), downloadTime)
+			}
+
+			writer.Flush()
+			return nil
 		},
 	}
 
-	modelCmd.AddCommand(pullCmd)
-	modelCmd.AddCommand(listCmd)
+	rmCmd := &cobra.Command{
+		Use:   "rm [model-id]",
+		Short: "Remove a downloaded model",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			modelID := args[0]
+			force, _ := cmd.Flags().GetBool("force")
+
+			if !force {
+				cmd.Printf("Are you sure you want to remove model %s? Use --force to confirm.\n", modelID)
+				return nil
+			}
+
+			mgr := createModelManager()
+
+			if err := mgr.RemoveModel(modelID); err != nil {
+				return err
+			}
+
+			cmd.Printf("Model %s removed successfully.\n", modelID)
+			return nil
+		},
+	}
+	rmCmd.Flags().BoolP("force", "f", false, "Force removal without confirmation")
+
 	modelCmd.AddCommand(searchCmd)
+	modelCmd.AddCommand(downloadCmd)
+	modelCmd.AddCommand(listCmd)
+	modelCmd.AddCommand(rmCmd)
 	rootCmd.AddCommand(modelCmd)
+}
+
+func createModelManager() *modelmanager.Manager {
+	home, _ := os.UserHomeDir()
+	modelDir := filepath.Join(home, ".localaistack", "models")
+	mgr := modelmanager.NewManager(modelDir)
+
+	mgr.RegisterProvider(modelmanager.NewOllamaProvider())
+	mgr.RegisterProvider(modelmanager.NewHuggingFaceProvider(""))
+	mgr.RegisterProvider(modelmanager.NewModelScopeProvider(""))
+
+	return mgr
+}
+
+func displaySearchResults(cmd *cobra.Command, source modelmanager.ModelSource, models []modelmanager.ModelInfo) {
+	if len(models) == 0 {
+		return
+	}
+
+	cmd.Printf("\n=== %s ===\n", strings.ToUpper(string(source)))
+	writer := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+	fmt.Fprintln(writer, "NAME\tFORMAT\tDESCRIPTION")
+
+	for _, model := range models {
+		desc := model.Description
+		if len(desc) > 50 {
+			desc = desc[:47] + "..."
+		}
+		fmt.Fprintf(writer, "%s\t%s\t%s\n", model.ID, model.Format, desc)
+	}
+
+	writer.Flush()
 }
 
 func RegisterSystemCommands(rootCmd *cobra.Command) {
