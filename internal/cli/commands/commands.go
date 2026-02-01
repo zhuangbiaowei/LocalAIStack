@@ -376,11 +376,26 @@ func displaySearchResults(cmd *cobra.Command, source modelmanager.ModelSource, m
 			desc = desc[:47] + "..."
 		}
 		tags := ""
-		if model.Metadata != nil {
-			tags = model.Metadata["tags"]
-		}
-		if tags == "" && len(model.Tags) > 0 {
-			tags = strings.Join(model.Tags, ", ")
+		switch source {
+		case modelmanager.SourceHuggingFace:
+			tags = ""
+		case modelmanager.SourceOllama:
+			if model.Metadata != nil {
+				tags = model.Metadata["sizes"]
+				if tags == "" {
+					tags = model.Metadata["tags"]
+				}
+			}
+			if tags == "" && len(model.Tags) > 0 {
+				tags = strings.Join(model.Tags, ", ")
+			}
+		default:
+			if model.Metadata != nil {
+				tags = model.Metadata["tags"]
+			}
+			if tags == "" && len(model.Tags) > 0 {
+				tags = strings.Join(model.Tags, ", ")
+			}
 		}
 		fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", model.ID, model.Format, tags, desc)
 	}

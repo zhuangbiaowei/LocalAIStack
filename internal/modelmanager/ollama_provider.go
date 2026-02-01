@@ -103,19 +103,44 @@ func (p *OllamaProvider) enrichModelsWithSizes(ctx context.Context, models []Mod
 		if models[i].Metadata == nil {
 			models[i].Metadata = map[string]string{}
 		}
+		librarySizes, err := p.fetchLibrarySizes(ctx, models[i].Name)
 		if sizes, ok := sizesByName[models[i].Name]; ok && sizes != "" {
-			models[i].Metadata["sizes"] = sizes
-		} else {
-			librarySizes, err := p.fetchLibrarySizes(ctx, models[i].Name)
-			if err == nil && len(librarySizes) > 0 {
-				models[i].Metadata["sizes"] = strings.Join(librarySizes, ", ")
-			}
+			models[i].Metadata["sizes"] = mergeSizeStrings(sizes, librarySizes)
+		} else if err == nil && len(librarySizes) > 0 {
+			models[i].Metadata["sizes"] = strings.Join(librarySizes, ", ")
 		}
 
 		if tags, ok := tagsByName[models[i].Name]; ok && tags != "" {
 			models[i].Metadata["tags"] = tags
 		}
 	}
+}
+
+func mergeSizeStrings(existing string, extra []string) string {
+	unique := map[string]struct{}{}
+	for _, part := range strings.Split(existing, ",") {
+		size := strings.ToLower(strings.TrimSpace(part))
+		if size == "" {
+			continue
+		}
+		unique[size] = struct{}{}
+	}
+	for _, size := range extra {
+		normalized := strings.ToLower(strings.TrimSpace(size))
+		if normalized == "" {
+			continue
+		}
+		unique[normalized] = struct{}{}
+	}
+	if len(unique) == 0 {
+		return ""
+	}
+	sizes := make([]string, 0, len(unique))
+	for size := range unique {
+		sizes = append(sizes, size)
+	}
+	sort.Strings(sizes)
+	return strings.Join(sizes, ", ")
 }
 
 func (p *OllamaProvider) fetchLibrarySizes(ctx context.Context, modelName string) ([]string, error) {
@@ -184,6 +209,17 @@ func tagSizeFromName(modelName string) string {
 	}
 	if ok, _ := regexp.MatchString(`^\d+(\.\d+)?b$`, tag); ok {
 		return tag
+	}
+	return ""
+}
+
+func normalizeParamSize(paramSize string) string {
+	size := strings.ToLower(strings.TrimSpace(paramSize))
+	if size == "" {
+		return ""
+	}
+	if ok, _ := regexp.MatchString(`^\d+(\.\d+)?b$`, size); ok {
+		return size
 	}
 	return ""
 }
@@ -284,6 +320,7 @@ func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit
 	count := 0
 	seen := map[string]int{}
 	sizeSets := map[string]map[string]struct{}{}
+	byteSizeSets := map[string]map[string]struct{}{}
 	tagSets := map[string]map[string]struct{}{}
 
 	for _, om := range tagsResp.Models {
@@ -316,18 +353,23 @@ func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit
 			count++
 		}
 
-		size := strings.TrimSpace(om.Details.ParameterSize)
+		size := tagSizeFromName(om.Name)
 		if size == "" {
-			size = tagSizeFromName(om.Name)
-			if size == "" {
-				size = FormatBytes(om.Size)
-			}
+			size = normalizeParamSize(om.Details.ParameterSize)
 		}
 		if size != "" {
 			if sizeSets[baseName] == nil {
 				sizeSets[baseName] = map[string]struct{}{}
 			}
 			sizeSets[baseName][size] = struct{}{}
+		} else {
+			byteSize := FormatBytes(om.Size)
+			if byteSize != "" {
+				if byteSizeSets[baseName] == nil {
+					byteSizeSets[baseName] = map[string]struct{}{}
+				}
+				byteSizeSets[baseName][byteSize] = struct{}{}
+			}
 		}
 
 		if tag := tagSizeFromName(om.Name); tag != "" {
@@ -352,8 +394,12 @@ func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit
 	}
 
 	for name, idx := range seen {
-		sizes := make([]string, 0, len(sizeSets[name]))
-		for size := range sizeSets[name] {
+		activeSizes := sizeSets[name]
+		if len(activeSizes) == 0 {
+			activeSizes = byteSizeSets[name]
+		}
+		sizes := make([]string, 0, len(activeSizes))
+		for size := range activeSizes {
 			sizes = append(sizes, size)
 		}
 		sort.Strings(sizes)
@@ -372,10 +418,10 @@ func (p *OllamaProvider) searchFromTags(ctx context.Context, query string, limit
 		}
 		family := models[idx].Metadata["family"]
 		switch {
-		case len(tags) > 0 && family != "":
-			models[idx].Description = fmt.Sprintf("Tags: %s, Family: %s", strings.Join(tags, ", "), family)
-		case len(tags) > 0:
-			models[idx].Description = fmt.Sprintf("Tags: %s", strings.Join(tags, ", "))
+		case len(sizes) > 0 && family != "":
+			models[idx].Description = fmt.Sprintf("Sizes: %s, Family: %s", strings.Join(sizes, ", "), family)
+		case len(sizes) > 0:
+			models[idx].Description = fmt.Sprintf("Sizes: %s", strings.Join(sizes, ", "))
 		case family != "":
 			models[idx].Description = fmt.Sprintf("Family: %s", family)
 		}
