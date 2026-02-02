@@ -376,6 +376,7 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 			}
 
 			defaults := defaultLlamaRunParams(baseInfo)
+			defaults = autoTuneRunParams(defaults, baseInfo, modelPath)
 			if threads > 0 {
 				defaults.threads = threads
 			}
@@ -384,6 +385,9 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 			}
 			if gpuLayers >= 0 {
 				defaults.gpuLayers = gpuLayers
+			}
+			if tensorSplit, _ := cmd.Flags().GetString("tensor-split"); tensorSplit != "" {
+				defaults.tensorSplit = tensorSplit
 			}
 
 			llamaPath, err := exec.LookPath("llama-server")
@@ -398,6 +402,9 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 				"--n-gpu-layers", strconv.Itoa(defaults.gpuLayers),
 				"--host", host,
 				"--port", strconv.Itoa(port),
+			}
+			if defaults.tensorSplit != "" {
+				argsList = append(argsList, "--tensor-split", defaults.tensorSplit)
 			}
 
 			cmd.Printf("Starting llama.cpp server for %s\n", filepath.Base(modelPath))
@@ -416,6 +423,7 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 	runCmd.Flags().Int("threads", 0, "CPU threads for llama.cpp (0 = auto)")
 	runCmd.Flags().Int("ctx-size", 0, "Context size for llama.cpp (0 = auto)")
 	runCmd.Flags().Int("n-gpu-layers", -1, "GPU layers for llama.cpp (-1 = auto)")
+	runCmd.Flags().String("tensor-split", "", "Tensor split for multi-GPU (comma-separated percentages)")
 	runCmd.Flags().String("host", "0.0.0.0", "Host to bind llama.cpp server")
 	runCmd.Flags().Int("port", 8080, "Port to bind llama.cpp server")
 
@@ -532,6 +540,7 @@ type llamaRunDefaults struct {
 	threads   int
 	ctxSize   int
 	gpuLayers int
+	tensorSplit string
 }
 
 func resolveBaseInfoPath() string {
@@ -592,6 +601,7 @@ func defaultLlamaRunParams(info system.BaseInfoSummary) llamaRunDefaults {
 		threads:   threads,
 		ctxSize:   ctxSize,
 		gpuLayers: gpuLayers,
+		tensorSplit: "",
 	}
 }
 
@@ -609,6 +619,102 @@ func parseVRAMFromGPUName(name string) int {
 		return 0
 	}
 	return value
+}
+
+func inferModelInfo(filename string) (float64, string) {
+	base := strings.ToLower(filepath.Base(filename))
+	re := regexp.MustCompile(`(\d+(?:\.\d+)?)b`)
+	matches := re.FindAllStringSubmatch(base, -1)
+	var max float64
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		value, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			continue
+		}
+		if value > max {
+			max = value
+		}
+	}
+
+	quant := ""
+	quantPatterns := []string{
+		"q2_k",
+		"q3_k",
+		"q4_k_m",
+		"q4_k_s",
+		"q4",
+		"q5_k_m",
+		"q5_k_s",
+		"q5",
+		"q6_k",
+		"q6",
+		"q8_0",
+		"q8",
+	}
+	for _, pattern := range quantPatterns {
+		if strings.Contains(base, pattern) {
+			quant = pattern
+			break
+		}
+	}
+
+	return max, quant
+}
+
+func autoTuneRunParams(defaults llamaRunDefaults, info system.BaseInfoSummary, modelPath string) llamaRunDefaults {
+	result := defaults
+	sizeB, quant := inferModelInfo(modelPath)
+	vram := parseVRAMFromGPUName(info.GPUName)
+	gpuCount := info.GPUCount
+	if gpuCount <= 0 && vram > 0 {
+		gpuCount = 1
+	}
+
+	if info.MemoryKB >= 64*1024*1024 {
+		result.ctxSize = maxInt(result.ctxSize, 8192)
+	} else if info.MemoryKB >= 32*1024*1024 {
+		result.ctxSize = maxInt(result.ctxSize, 4096)
+	}
+
+	if vram >= 16 && gpuCount >= 1 && sizeB > 0 && sizeB <= 30 {
+		if strings.HasPrefix(quant, "q4") || strings.HasPrefix(quant, "q5") || strings.HasPrefix(quant, "q6") || strings.HasPrefix(quant, "q8") || quant == "" {
+			result.gpuLayers = 999
+		}
+	}
+
+	if gpuCount > 1 && result.gpuLayers != 0 {
+		result.tensorSplit = makeTensorSplit(gpuCount)
+	}
+
+	return result
+}
+
+func makeTensorSplit(count int) string {
+	if count <= 1 {
+		return ""
+	}
+	parts := make([]string, 0, count)
+	base := 100 / count
+	remaining := 100 - base*count
+	for i := 0; i < count; i++ {
+		value := base
+		if remaining > 0 {
+			value++
+			remaining--
+		}
+		parts = append(parts, strconv.Itoa(value))
+	}
+	return strings.Join(parts, ",")
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func resolveGGUFFile(modelDir string, ggufFiles []string, selected string) (string, bool, error) {

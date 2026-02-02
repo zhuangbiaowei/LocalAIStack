@@ -12,6 +12,7 @@ type BaseInfoSummary struct {
 	CPUCores int
 	MemoryKB int64
 	GPUName  string
+	GPUCount int
 }
 
 func LoadBaseInfoSummary(path string) (BaseInfoSummary, error) {
@@ -47,8 +48,26 @@ func LoadBaseInfoSummary(path string) (BaseInfoSummary, error) {
 					summary.MemoryKB = total
 				}
 			}
-		case section == "GPU" && strings.HasPrefix(line, "- GPU:") && summary.GPUName == "":
-			summary.GPUName = strings.TrimSpace(strings.TrimPrefix(line, "- GPU:"))
+		case section == "GPU":
+			if strings.HasPrefix(line, "- GPU:") {
+				name := strings.TrimSpace(strings.TrimPrefix(line, "- GPU:"))
+				if summary.GPUName == "" {
+					summary.GPUName = name
+				}
+				if name != "" {
+					summary.GPUCount++
+				}
+				continue
+			}
+			if strings.HasPrefix(line, "-") {
+				continue
+			}
+			if summary.GPUName == "" {
+				summary.GPUName = line
+			}
+			if line != "" {
+				summary.GPUCount++
+			}
 		}
 	}
 
@@ -56,5 +75,8 @@ func LoadBaseInfoSummary(path string) (BaseInfoSummary, error) {
 		return BaseInfoSummary{}, fmt.Errorf("read base info: %w", err)
 	}
 
+	if summary.GPUCount == 0 && summary.GPUName != "" {
+		summary.GPUCount = 1
+	}
 	return summary, nil
 }

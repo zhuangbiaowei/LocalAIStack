@@ -18,7 +18,35 @@ else
   $SUDO git clone --depth 1 "$repo_url" "$source_dir"
 fi
 
-$SUDO cmake -S "$source_dir" -B "$source_dir/build" -DLLAMA_BUILD_SERVER=ON -DCMAKE_BUILD_TYPE=Release
+if [[ "${LLAMA_CUDA:-}" == "1" || "${LLAMA_CUDA:-}" == "ON" ]]; then
+  $SUDO sed -i 's/list(APPEND CUDA_FLAGS -compress-mode=${GGML_CUDA_COMPRESSION_MODE})/# disabled by LocalAIStack: compress-mode not supported on this toolchain/' \
+    "$source_dir/ggml/src/ggml-cuda/CMakeLists.txt"
+fi
+
+cmake_flags=("-DLLAMA_BUILD_SERVER=ON" "-DCMAKE_BUILD_TYPE=Release")
+cmake_flags+=("-DCMAKE_CXX_STANDARD=17" "-DCMAKE_CUDA_STANDARD=17")
+if [[ -x /usr/bin/gcc-10 && -x /usr/bin/g++-10 ]]; then
+  cmake_flags+=("-DCMAKE_C_COMPILER=/usr/bin/gcc-10" "-DCMAKE_CXX_COMPILER=/usr/bin/g++-10")
+fi
+if [[ "${LLAMA_CUDA:-}" == "1" || "${LLAMA_CUDA:-}" == "ON" ]]; then
+  cmake_flags+=("-DGGML_CUDA=ON")
+  cmake_flags+=("-DCMAKE_CUDA_COMPILER=/usr/bin/nvcc")
+  if [[ -x /usr/bin/gcc-10 ]]; then
+    cmake_flags+=("-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/gcc-10")
+  else
+    cmake_flags+=("-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/gcc-11")
+  fi
+  cmake_flags+=("-DCUDAToolkit_ROOT=/usr")
+  cmake_flags+=("-DCUDA_TOOLKIT_ROOT_DIR=/usr")
+  cmake_flags+=("-DCUDAToolkit_VERSION=11.5")
+  cmake_flags+=("-DGGML_CUDA_COMPRESSION_MODE=none")
+  if [[ -n "${LLAMA_CUDA_ARCHS:-}" ]]; then
+    cmake_flags+=("-DCMAKE_CUDA_ARCHITECTURES=${LLAMA_CUDA_ARCHS}")
+  fi
+fi
+
+$SUDO rm -rf "$source_dir/build"
+$SUDO cmake -S "$source_dir" -B "$source_dir/build" "${cmake_flags[@]}"
 $SUDO cmake --build "$source_dir/build" --config Release
 
 for bin in llama-cli llama-server; do

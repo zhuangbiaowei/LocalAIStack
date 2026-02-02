@@ -16,6 +16,7 @@ import (
 	"github.com/zhuangbiaowei/LocalAIStack/internal/config"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/i18n"
 	"github.com/zhuangbiaowei/LocalAIStack/internal/llm"
+	"github.com/zhuangbiaowei/LocalAIStack/internal/system"
 	"gopkg.in/yaml.v3"
 )
 
@@ -99,7 +100,7 @@ func Install(name string) error {
 		return err
 	}
 
-	mode := selectInstallMode(spec)
+	mode, env := selectInstallModeForSystem(normalized, spec)
 	steps, ok := spec.Install[mode]
 	if !ok || len(steps) == 0 {
 		return i18n.Errorf("install plan for module %q has no steps for mode %q", normalized, mode)
@@ -111,6 +112,9 @@ func Install(name string) error {
 		if llmPlan, err := interpretInstallPlanWithLLM(cfg.LLM, normalized, string(raw), mode, steps); err == nil {
 			if strings.TrimSpace(llmPlan.Mode) != "" {
 				planMode = strings.TrimSpace(llmPlan.Mode)
+			}
+			if env["LLAMA_CUDA"] == "1" && planMode != mode {
+				planMode = mode
 			}
 			if planMode != mode {
 				if modeSteps, ok := spec.Install[planMode]; ok && len(modeSteps) > 0 {
@@ -127,7 +131,7 @@ func Install(name string) error {
 
 	vars := flattenDefaults(spec.Configuration.Defaults)
 	for _, step := range planSteps {
-		if err := runInstallStep(normalized, moduleDir, step, vars); err != nil {
+		if err := runInstallStep(normalized, moduleDir, step, vars, env); err != nil {
 			return err
 		}
 	}
@@ -172,6 +176,31 @@ func selectInstallMode(spec moduleInstallSpec) string {
 		return mode
 	}
 	return ""
+}
+
+func selectInstallModeForSystem(moduleName string, spec moduleInstallSpec) (string, map[string]string) {
+	mode := selectInstallMode(spec)
+	env := map[string]string{}
+
+	if moduleName != "llama.cpp" {
+		return mode, env
+	}
+
+	baseInfoPath := resolveBaseInfoPath()
+	baseInfo, err := system.LoadBaseInfoSummary(baseInfoPath)
+	if err != nil {
+		return mode, env
+	}
+
+	if strings.TrimSpace(baseInfo.GPUName) != "" {
+		mode = "source"
+		env["LLAMA_CUDA"] = "1"
+		if archs := detectCudaArchs(baseInfo.GPUName); archs != "" {
+			env["LLAMA_CUDA_ARCHS"] = archs
+		}
+	}
+
+	return mode, env
 }
 
 func interpretInstallPlanWithLLM(cfg config.LLMConfig, moduleName, installYAML, mode string, steps []installStep) (llmInstallPlan, error) {
@@ -266,10 +295,10 @@ func isServiceStep(step installStep) bool {
 	return strings.TrimSpace(step.Expected.Unit) != "" || strings.TrimSpace(step.Expected.Service) != ""
 }
 
-func runInstallStep(moduleName, moduleDir string, step installStep, vars map[string]string) error {
+func runInstallStep(moduleName, moduleDir string, step installStep, vars map[string]string, env map[string]string) error {
 	switch strings.TrimSpace(step.Tool) {
 	case "shell":
-		output, exitCode, err := runShellCommand(step.Command, moduleDir, true)
+		output, exitCode, err := runShellCommandWithEnv(step.Command, moduleDir, true, env)
 		if err != nil {
 			return i18n.Errorf("install step %s failed: %w", step.ID, err)
 		}
@@ -296,8 +325,15 @@ func runInstallStep(moduleName, moduleDir string, step installStep, vars map[str
 }
 
 func runShellCommand(command, moduleDir string, stream bool) (string, int, error) {
+	return runShellCommandWithEnv(command, moduleDir, stream, nil)
+}
+
+func runShellCommandWithEnv(command, moduleDir string, stream bool, env map[string]string) (string, int, error) {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = moduleDir
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), formatEnv(env)...)
+	}
 	if stream {
 		var buffer bytes.Buffer
 		writer := io.MultiWriter(&buffer, os.Stdout)
@@ -332,6 +368,52 @@ func runShellCommand(command, moduleDir string, stream bool) (string, int, error
 		return message, exitCode, i18n.Errorf(message)
 	}
 	return string(output), exitCode, nil
+}
+
+func formatEnv(values map[string]string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	env := make([]string, 0, len(values))
+	for key, value := range values {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
+}
+
+func resolveBaseInfoPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(".", "base_info.md")
+	}
+	primary := filepath.Join(home, ".localaistack", "base_info.md")
+	if _, err := os.Stat(primary); err == nil {
+		return primary
+	}
+	alternate := filepath.Join(home, ".localiastack", "base_info.md")
+	if _, err := os.Stat(alternate); err == nil {
+		return alternate
+	}
+	return primary
+}
+
+func detectCudaArchs(gpuName string) string {
+	name := strings.ToLower(strings.TrimSpace(gpuName))
+	switch {
+	case strings.Contains(name, "v100"):
+		return "70"
+	case strings.Contains(name, "a100"):
+		return "80"
+	case strings.Contains(name, "h100"):
+		return "90"
+	case strings.Contains(name, "a10"):
+		return "86"
+	case strings.Contains(name, "4090"), strings.Contains(name, "4080"), strings.Contains(name, "4070"):
+		return "89"
+	case strings.Contains(name, "3090"), strings.Contains(name, "3080"), strings.Contains(name, "3070"):
+		return "86"
+	}
+	return ""
 }
 
 func runTemplateStep(moduleDir string, edit installEdit, vars map[string]string) error {
