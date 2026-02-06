@@ -8,7 +8,41 @@ else
 fi
 
 PYTHON_BIN="${VLLM_PYTHON:-python3}"
-INSTALL_METHOD="${VLLM_INSTALL_METHOD:-wheel}"
+INSTALL_METHOD="${VLLM_INSTALL_METHOD:-auto}"
+BASE_INFO_PATH="${LAS_BASE_INFO_PATH:-$HOME/.localaistack/base_info.md}"
+
+has_avx512() {
+  local flags=""
+  if [[ -f "$BASE_INFO_PATH" ]]; then
+    flags="$(grep -i "flags" "$BASE_INFO_PATH" | head -n 1 | tr -d '\r')"
+  fi
+  if [[ -z "$flags" && -r /proc/cpuinfo ]]; then
+    flags="$(grep -i "flags" /proc/cpuinfo | head -n 1 | tr -d '\r')"
+  fi
+  echo "$flags" | grep -qi "avx512"
+}
+
+ensure_wrapper() {
+  local venv_bin="$1"
+  if [[ ! -x "$venv_bin" ]]; then
+    echo "vllm entrypoint not found at $venv_bin" >&2
+    exit 1
+  fi
+  wrapper_content="#!/usr/bin/env bash
+# LocalAIStack vllm wrapper
+export PYTHONNOUSERSITE=1
+exec \"$venv_bin\" \"\$@\"
+"
+  if [[ -n "$SUDO" && -d /usr/local/bin ]]; then
+    $SUDO install -d /usr/local/bin
+    echo "$wrapper_content" | $SUDO tee /usr/local/bin/vllm >/dev/null
+    $SUDO chmod 0755 /usr/local/bin/vllm
+  else
+    mkdir -p "$HOME/.local/bin"
+    echo "$wrapper_content" > "$HOME/.local/bin/vllm"
+    chmod 0755 "$HOME/.local/bin/vllm"
+  fi
+}
 
 install_from_source() {
   if ! command -v git >/dev/null 2>&1; then
@@ -35,8 +69,18 @@ install_from_source() {
   source .venv/bin/activate
   VLLM_USE_PRECOMPILED=1 uv pip install --editable .
 
+  ensure_wrapper "$source_dir/.venv/bin/vllm"
+
   popd >/dev/null
 }
+
+if [[ "$INSTALL_METHOD" == "auto" ]]; then
+  if has_avx512; then
+    INSTALL_METHOD="wheel"
+  else
+    INSTALL_METHOD="source"
+  fi
+fi
 
 if [[ "$INSTALL_METHOD" == "source" ]]; then
   install_from_source

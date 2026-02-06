@@ -62,6 +62,21 @@ func RegisterModuleCommands(rootCmd *cobra.Command) {
 		},
 	}
 
+	purgeCmd := &cobra.Command{
+		Use:   "purge [module-name]",
+		Short: "Purge a module",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.Printf("%s\n", i18n.T("Purging module: %s", args[0]))
+			if err := module.Purge(args[0]); err != nil {
+				cmd.Printf("%s\n", i18n.T("Module purge failed: %s", err))
+				return err
+			}
+			cmd.Printf("%s\n", i18n.T("Module %s purged successfully.", args[0]))
+			return nil
+		},
+	}
+
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all available modules",
@@ -116,6 +131,7 @@ func RegisterModuleCommands(rootCmd *cobra.Command) {
 
 	moduleCmd.AddCommand(installCmd)
 	moduleCmd.AddCommand(uninstallCmd)
+	moduleCmd.AddCommand(purgeCmd)
 	moduleCmd.AddCommand(listCmd)
 	moduleCmd.AddCommand(checkCmd)
 	rootCmd.AddCommand(moduleCmd)

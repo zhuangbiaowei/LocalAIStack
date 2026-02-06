@@ -403,6 +403,7 @@ Manage software modules: 管理软件模块
 'Manageable modules:': 可管理的模块：
 Maximum number of results per source: 每个来源的最大结果数量
 Module %s installed successfully.: 模块 %s 安装成功。
+Module %s purged successfully.: 模块 %s 已成功清除。
 Module %s uninstalled successfully.: 模块 %s 已成功卸载。
 'Module check failed: %s': 模块检查失败：%s
 'Module install failed: %s': 模块安装失败：%s
@@ -413,6 +414,8 @@ Not installed: 未安装
 OK: 好的。
 Port to bind llama.cpp server: 将端口绑定到 llama.cpp 服务器
 Preferred interaction language: 首选的交互语言
+Purge a module: “Purge a module” 的意思是“清除（或删除）某个模块”。
+'Purging module: %s': 正在清除模块：%s
 Ready: 准备好了。
 Refresh: 刷新
 Remove a downloaded model: 删除已下载的模型
@@ -478,6 +481,7 @@ help for check: "关于“check”的帮助信息：  \n“Check”是一个常�
 help for download: 关于下载的帮助信息
 help for install: 安装帮助
 help for list: 关于列表的帮助信息：
+help for purge: 关于“purge”的帮助……
 help for run: 关于如何运行的帮助信息……
 help for search: 搜索帮助
 help for uninstall: 关于卸载的帮助信息：
