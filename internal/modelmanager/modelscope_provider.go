@@ -190,8 +190,14 @@ func (p *ModelScopeProvider) Download(ctx context.Context, modelID string, destP
 
 func filterModelScopeFiles(files []ModelScopeFile, hint string) ([]ModelScopeFile, error) {
 	allowed := make([]ModelScopeFile, 0, len(files))
+	required := make([]ModelScopeFile, 0)
 	for _, file := range files {
 		if file.Type != "file" {
+			continue
+		}
+		base := strings.ToLower(filepath.Base(file.Path))
+		if IsRequiredModelFile(base) {
+			required = append(required, file)
 			continue
 		}
 		ext := strings.ToLower(filepath.Ext(file.Path))
@@ -202,7 +208,7 @@ func filterModelScopeFiles(files []ModelScopeFile, hint string) ([]ModelScopeFil
 	}
 
 	if hint == "" {
-		return allowed, nil
+		return append(allowed, required...), nil
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(hint))
@@ -224,13 +230,13 @@ func filterModelScopeFiles(files []ModelScopeFile, hint string) ([]ModelScopeFil
 	}
 
 	if len(exact) == 1 {
-		return exact, nil
+		return append(exact, required...), nil
 	}
 	if len(exact) > 1 {
 		return nil, fmt.Errorf("multiple files match %q; please specify a more specific filename", hint)
 	}
 	if len(contains) == 1 {
-		return contains, nil
+		return append(contains, required...), nil
 	}
 	if len(contains) > 1 {
 		names := make([]string, 0, len(contains))
@@ -284,6 +290,45 @@ func (p *ModelScopeProvider) listModelFiles(ctx context.Context, modelID string)
 	}
 
 	return filesResp.Data.Files, nil
+}
+
+func (p *ModelScopeProvider) DownloadSupportFiles(ctx context.Context, modelID string, destPath string) error {
+	files, err := p.listModelFiles(ctx, modelID)
+	if err != nil {
+		return fmt.Errorf("failed to list model files: %w", err)
+	}
+	modelDir := filepath.Join(destPath, strings.ReplaceAll(modelID, "/", "_"))
+	if err := os.MkdirAll(modelDir, 0755); err != nil {
+		return fmt.Errorf("failed to create model directory: %w", err)
+	}
+
+	remote := map[string]ModelScopeFile{}
+	for _, file := range files {
+		if file.Type != "file" {
+			continue
+		}
+		base := strings.ToLower(filepath.Base(file.Path))
+		if IsRequiredModelFile(base) {
+			remote[base] = file
+		}
+	}
+
+	for _, base := range RequiredModelFiles() {
+		destFile := filepath.Join(modelDir, base)
+		if _, err := os.Stat(destFile); err == nil {
+			continue
+		}
+		remoteFile, ok := remote[base]
+		if !ok {
+			continue
+		}
+		fileURL := fmt.Sprintf("%s/models/%s/repo?file_path=%s", modelscopeAPIURL, modelID, remoteFile.Path)
+		if err := p.downloadFile(ctx, fileURL, destFile, remoteFile.Size, nil); err != nil {
+			return fmt.Errorf("failed to download file %s: %w", remoteFile.Path, err)
+		}
+	}
+
+	return nil
 }
 
 func (p *ModelScopeProvider) downloadFile(ctx context.Context, url, destPath string, totalSize int64, progress func(downloaded, total int64)) error {

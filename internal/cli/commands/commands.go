@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -341,6 +342,8 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 			gpuLayers, _ := cmd.Flags().GetInt("n-gpu-layers")
 			host, _ := cmd.Flags().GetString("host")
 			port, _ := cmd.Flags().GetInt("port")
+			vllmMaxModelLen, _ := cmd.Flags().GetInt("vllm-max-model-len")
+			vllmGpuMemUtil, _ := cmd.Flags().GetFloat64("vllm-gpu-memory-utilization")
 
 			mgr := createModelManager()
 
@@ -364,17 +367,65 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 				}
 			}
 
+			if src == modelmanager.SourceOllama {
+				ollamaPath, err := exec.LookPath("ollama")
+				if err != nil {
+					return fmt.Errorf("ollama not found in PATH (install the ollama module first)")
+				}
+				cmd.Printf("Starting Ollama model: %s\n", modelID)
+				runCmd := exec.CommandContext(cmd.Context(), ollamaPath, "run", modelID)
+				runCmd.Stdout = cmd.OutOrStdout()
+				runCmd.Stderr = cmd.ErrOrStderr()
+				runCmd.Stdin = cmd.InOrStdin()
+				return runCmd.Run()
+			}
+
 			modelDir, err := mgr.ResolveLocalModelDir(src, modelID)
 			if err != nil {
 				return fmt.Errorf("local model not found: %w", err)
 			}
 
+			safetensorsFiles, err := modelmanager.FindSafetensorsFiles(modelDir)
+			if err != nil {
+				return err
+			}
 			ggufFiles, err := modelmanager.FindGGUFFiles(modelDir)
 			if err != nil {
 				return err
 			}
-			if len(ggufFiles) == 0 {
-				return fmt.Errorf("no GGUF files found for %s", modelID)
+			if len(safetensorsFiles) == 0 && len(ggufFiles) == 0 {
+				return fmt.Errorf("no supported model files found for %s", modelID)
+			}
+
+			if len(safetensorsFiles) > 0 {
+				modelRef := modelDir
+				if !hasVLLMConfig(modelDir) {
+					meta, err := readModelMetadata(modelDir)
+					if err != nil {
+						return fmt.Errorf("vLLM requires a local config.json/params.json or a known repo id: %w", err)
+					}
+					if meta.ID == "" {
+						return fmt.Errorf("metadata.json missing model id")
+					}
+					modelRef = meta.ID
+				}
+				vllmPath, err := exec.LookPath("vllm")
+				if err != nil {
+					return fmt.Errorf("vllm not found in PATH (install the vllm module first)")
+				}
+				cmd.Printf("Starting vLLM server for %s\n", modelID)
+				args := []string{"serve", modelRef, "--host", host, "--port", strconv.Itoa(port)}
+				if vllmMaxModelLen > 0 {
+					args = append(args, "--max-model-len", strconv.Itoa(vllmMaxModelLen))
+				}
+				if vllmGpuMemUtil > 0 {
+					args = append(args, "--gpu-memory-utilization", fmt.Sprintf("%.2f", vllmGpuMemUtil))
+				}
+				runCmd := exec.CommandContext(cmd.Context(), vllmPath, args...)
+				runCmd.Stdout = cmd.OutOrStdout()
+				runCmd.Stderr = cmd.ErrOrStderr()
+				runCmd.Stdin = cmd.InOrStdin()
+				return runCmd.Run()
 			}
 
 			modelPath, autoSelected, err := resolveGGUFFile(modelDir, ggufFiles, selectedFile)
@@ -442,6 +493,8 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 	runCmd.Flags().String("tensor-split", "", "Tensor split for multi-GPU (comma-separated percentages)")
 	runCmd.Flags().String("host", "0.0.0.0", "Host to bind llama.cpp server")
 	runCmd.Flags().Int("port", 8080, "Port to bind llama.cpp server")
+	runCmd.Flags().Int("vllm-max-model-len", 0, "vLLM max model length (safetensors only)")
+	runCmd.Flags().Float64("vllm-gpu-memory-utilization", 0, "vLLM GPU memory utilization (0-1, safetensors only)")
 
 	rmCmd := &cobra.Command{
 		Use:   "rm [model-id]",
@@ -490,11 +543,89 @@ func RegisterModelCommands(rootCmd *cobra.Command) {
 	rmCmd.Flags().BoolP("force", "f", false, "Force removal without confirmation")
 	rmCmd.Flags().StringP("source", "s", "", "Source of the model (ollama, huggingface, modelscope)")
 
+	repairCmd := &cobra.Command{
+		Use:     "repair [model-id]",
+		Short:   "Download missing tokenizer/config files",
+		Aliases: []string{"fix"},
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			modelID := args[0]
+			source, _ := cmd.Flags().GetString("source")
+
+			mgr := createModelManager()
+
+			var src modelmanager.ModelSource
+			explicitSource := source != "" || hasExplicitSource(modelID)
+			if source != "" {
+				switch strings.ToLower(source) {
+				case "ollama":
+					src = modelmanager.SourceOllama
+				case "huggingface", "hf":
+					src = modelmanager.SourceHuggingFace
+				case "modelscope":
+					src = modelmanager.SourceModelScope
+				default:
+					return fmt.Errorf("unknown source: %s", source)
+				}
+			} else {
+				var err error
+				src, modelID, err = modelmanager.ParseModelID(modelID)
+				if err != nil {
+					return err
+				}
+			}
+
+			modelDir, err := mgr.ResolveLocalModelDir(src, modelID)
+			if err != nil {
+				return fmt.Errorf("local model not found: %w", err)
+			}
+
+			if !explicitSource {
+				if meta, err := readModelMetadata(modelDir); err == nil && meta.ID != "" {
+					if meta.Source != "" {
+						src = modelmanager.ModelSource(meta.Source)
+					}
+					modelID = meta.ID
+				}
+			}
+
+			switch src {
+			case modelmanager.SourceOllama:
+				cmd.Println("Ollama models do not require tokenizer/config repair.")
+				return nil
+			case modelmanager.SourceHuggingFace:
+				provider, err := mgr.GetProvider(src)
+				if err != nil {
+					return err
+				}
+				hf, ok := provider.(*modelmanager.HuggingFaceProvider)
+				if !ok {
+					return fmt.Errorf("huggingface provider not available")
+				}
+				return hf.DownloadSupportFiles(cmd.Context(), modelID, mgr.GetModelDir())
+			case modelmanager.SourceModelScope:
+				provider, err := mgr.GetProvider(src)
+				if err != nil {
+					return err
+				}
+				ms, ok := provider.(*modelmanager.ModelScopeProvider)
+				if !ok {
+					return fmt.Errorf("modelscope provider not available")
+				}
+				return ms.DownloadSupportFiles(cmd.Context(), modelID, mgr.GetModelDir())
+			default:
+				return fmt.Errorf("unsupported model source: %s", src)
+			}
+		},
+	}
+	repairCmd.Flags().StringP("source", "s", "", "Source of the model (ollama, huggingface, modelscope)")
+
 	modelCmd.AddCommand(searchCmd)
 	modelCmd.AddCommand(downloadCmd)
 	modelCmd.AddCommand(listCmd)
 	modelCmd.AddCommand(runCmd)
 	modelCmd.AddCommand(rmCmd)
+	modelCmd.AddCommand(repairCmd)
 	rootCmd.AddCommand(modelCmd)
 }
 
@@ -731,6 +862,42 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func hasVLLMConfig(modelDir string) bool {
+	if _, err := os.Stat(filepath.Join(modelDir, "config.json")); err == nil {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(modelDir, "params.json")); err == nil {
+		return true
+	}
+	return false
+}
+
+type modelMetadata struct {
+	ID     string `json:"id"`
+	Source string `json:"source"`
+}
+
+func readModelMetadata(modelDir string) (modelMetadata, error) {
+	path := filepath.Join(modelDir, "metadata.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return modelMetadata{}, fmt.Errorf("missing metadata.json at %s", path)
+	}
+	var meta modelMetadata
+	if err := json.Unmarshal(raw, &meta); err != nil {
+		return modelMetadata{}, fmt.Errorf("failed to parse metadata.json: %w", err)
+	}
+	return meta, nil
+}
+
+func hasExplicitSource(input string) bool {
+	inputLower := strings.ToLower(strings.TrimSpace(input))
+	return strings.HasPrefix(inputLower, "ollama:") ||
+		strings.HasPrefix(inputLower, "huggingface:") ||
+		strings.HasPrefix(inputLower, "hf:") ||
+		strings.HasPrefix(inputLower, "modelscope:")
 }
 
 func resolveGGUFFile(modelDir string, ggufFiles []string, selected string) (string, bool, error) {

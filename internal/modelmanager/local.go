@@ -47,3 +47,24 @@ func FindGGUFFiles(modelPath string) ([]string, error) {
 	sort.Strings(files)
 	return files, nil
 }
+
+func FindSafetensorsFiles(modelPath string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(modelPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.EqualFold(filepath.Ext(d.Name()), ".safetensors") {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(files)
+	return files, nil
+}
